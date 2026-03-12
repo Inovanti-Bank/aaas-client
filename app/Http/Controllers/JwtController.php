@@ -73,6 +73,7 @@ class JwtController extends Controller
                 'headers' => $response->headers(),
                 'body' => $bodyResponse,
                 'raw' => $raw,
+                'token' => $token,
             ], $response->status());
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

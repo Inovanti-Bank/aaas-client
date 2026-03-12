@@ -22,7 +22,7 @@
 <body>
     <div class="container">
         <h1 style="margin:0 0 12px">AaaS</h1>
-        <p class="muted">Preencha os campos abaixo, gere o token assinado e envie a requisição para a API. O resultado será exibido em JSON.</p>
+        <p class="muted">Preencha os campos abaixo, gere o token assinado e envie a requisição para a API. O resultado e o JWT serão exibidos em JSON.</p>
 
         <form id="jwtForm" style="margin-top:16px">
             @csrf
@@ -62,14 +62,39 @@
             </div>
         </form>
 
-        <h2 style="margin-top:18px;margin-bottom:8px">Resultado</h2>
+        <div style="margin-top:18px;margin-bottom:8px; position:relative">
+            <h2 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
+                <span>JWT gerado</span>
+                <button type="button"
+                        onclick="copyCardContent('jwtToken')"
+                        style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
+                    Copiar
+                </button>
+            </h2>
+            <pre id="jwtToken" style="min-height:80px;white-space:pre-wrap"></pre>
+        </div>
+
         <div class="result-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div>
-                <h3 style="margin:0 0 6px">Status</h3>
+                <h3 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
+                    <span>Status</span>
+                    <button type="button"
+                            onclick="copyCardContent('resultSummary')"
+                            style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
+                        Copiar
+                    </button>
+                </h3>
                 <pre id="resultSummary" style="min-height:160px;white-space:pre-wrap"></pre>
             </div>
             <div>
-                <h3 style="margin:0 0 6px">Response</h3>
+                <h3 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
+                    <span>Response</span>
+                    <button type="button"
+                            onclick="copyCardContent('resultRaw')"
+                            style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
+                        Copiar
+                    </button>
+                </h3>
                 <pre id="resultRaw" style="min-height:160px;white-space:pre-wrap"></pre>
             </div>
         </div>
@@ -80,6 +105,7 @@ const form = document.getElementById('jwtForm');
 const resultSummaryEl = document.getElementById('resultSummary');
 const resultRawEl = document.getElementById('resultRaw');
 const statusText = document.getElementById('statusText');
+const jwtTokenEl = document.getElementById('jwtToken');
 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 const IAAS_GROUPS = {
@@ -231,11 +257,40 @@ endpointDropdown.addEventListener('click', (e) => {
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
 
+async function copyCardContent(preId) {
+    const el = document.getElementById(preId);
+    if (!el) return;
+    const text = el.textContent || '';
+    if (!text) return;
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        statusText.textContent = 'Conteúdo copiado.';
+    } catch (e) {
+        statusText.textContent = 'Não foi possível copiar o conteúdo.';
+    }
+}
+
 form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     resultSummaryEl.textContent = 'Sending...';
     resultRawEl.textContent = 'Sending...';
     statusText.textContent = '';
+    if (jwtTokenEl) {
+        jwtTokenEl.textContent = 'Gerando...';
+    }
 
     const payload = {
         base_url: document.getElementById('base_url').value,
@@ -262,6 +317,14 @@ form.addEventListener('submit', async (ev) => {
             body: data.body ?? null,
         };
         resultSummaryEl.textContent = pretty(summary);
+
+        if (jwtTokenEl) {
+            if (data.token) {
+                jwtTokenEl.textContent = data.token;
+            } else {
+                jwtTokenEl.textContent = '— nenhum token retornado —';
+            }
+        }
 
         const rawCandidate = data.raw ?? data.body ?? null;
         if (rawCandidate === null || rawCandidate === undefined) {
