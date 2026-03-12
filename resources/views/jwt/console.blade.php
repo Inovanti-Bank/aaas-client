@@ -31,9 +31,10 @@
                 <input id="base_url" name="base_url" type="text" value="{{ $baseUrl }}" />
             </div>
 
-            <div style="margin-bottom:12px">
+            <div style="margin-bottom:12px; position:relative">
                 <label for="endpoint">Endpoint (path)</label>
-                <input id="endpoint" name="endpoint" type="text" placeholder="/v1/aaas/…" required />
+                <input id="endpoint" name="endpoint" type="text" placeholder="/v1/aaas/…" autocomplete="off" required />
+                <div id="endpointDropdown" style="position:absolute;top:100%;left:0;right:0;z-index:10;background:#fff;border:1px solid #d1d5db;border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;display:none;box-shadow:0 10px 25px rgba(15,23,42,.12);font-size:13px"></div>
             </div>
             <div style="margin-bottom:12px">
                 <label for="method">Method</label>
@@ -80,6 +81,153 @@ const resultSummaryEl = document.getElementById('resultSummary');
 const resultRawEl = document.getElementById('resultRaw');
 const statusText = document.getElementById('statusText');
 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+const IAAS_GROUPS = {
+    account: {
+        label: 'Account',
+        endpoints: [
+            '/v1/aaas/account',
+            '/v1/aaas/account/list',
+            '/v1/aaas/account/{account_id}',
+            '/v1/aaas/account/{account_id}/details',
+            '/v1/aaas/account/{account_id}/phone/unlink',
+            '/v1/aaas/account/{account_id}/phone',
+            '/v1/aaas/account/{account_id}/statement',
+            '/v1/aaas/account/{account_id}/balance/lock',
+            '/v1/aaas/account/{account_id}/balance/unlock',
+            '/v1/aaas/account/{account_id}/payment/refund',
+        ],
+    },
+    cashIn: {
+        label: 'Cash In',
+        endpoints: [
+            '/v1/aaas/cash-in/{account_id}/pix/static-qr-code',
+            '/v1/aaas/cash-in/{account_id}/pix/dynamic-qr-code',
+        ],
+    },
+    cashOut: {
+        label: 'Cash Out',
+        endpoints: [
+            '/v1/aaas/cash-out/make-pix-transfer',
+            '/v1/aaas/cash-out/make-non-priority-pix-transfer',
+            '/v1/aaas/cash-out/make-pix-transfer-only-with-alias',
+            '/v1/aaas/cash-out/decode-qr-code',
+            '/v1/aaas/cash-out/make-bank-transfer',
+            '/v1/aaas/cash-out/make-bank-slip-payment',
+            '/v1/aaas/cash-out/make-utilities-payment',
+            '/v1/aaas/cash-out/make-internal-transfer',
+            '/v1/aaas/cash-out/return-internal-transfer',
+        ],
+    },
+    transaction: {
+        label: 'Transaction',
+        endpoints: [
+            '/v1/aaas/transaction/{transaction_id}',
+            '/v1/aaas/transaction/withdraw/{withdraw_id}',
+        ],
+    },
+    webhook: {
+        label: 'Webhook',
+        endpoints: [
+            '/v1/aaas/webhooks',
+            '/v1/aaas/webhooks/list',
+            '/v1/aaas/webhooks/{webhook_id}',
+            '/v1/aaas/webhooks/{webhook_id}/update',
+            '/v1/aaas/webhooks/{webhook_id}/delete',
+        ],
+    },
+    batchesAndBillings: {
+        label: 'Batches and Billings',
+        endpoints: [
+            '/v1/aaas/process/{file_type}/validate-shipment',
+            '/v1/validate/cnab400',
+            '/v1/aaas/process/{account_id}/file-type/{file_type}/send-shipment',
+            '/v1/aaas/process/{account_id}/send-invoice',
+            '/v1/aaas/process/{account_id}/send-recharge',
+            '/v1/aaas/process/{account_id}/{payment_slip_number}/get-payment-slip/pdf',
+            '/v1/aaas/process/{account_id}/batches/{uuid}/slips/zip',
+            '/v1/aaas/process/{account_id}/{payment_slip_number}/get-payment-slip',
+            '/v1/aaas/process/{account_id}/batch/{batch_id}/return-file/{format}',
+            '/v1/aaas/process/{account_id}/return-file/{format}',
+            '/v1/aaas/process/{account_id}/batches',
+            '/v1/aaas/process/{account_id}/batch/{uuid}/',
+            '/v1/aaas/process/{account_id}/billings',
+            '/v1/aaas/process/{account_id}/billings/{uuid}',
+            '/v1/aaas/process/{account_id}/billings/batch/{batch_uuid}',
+            '/v1/aaas/process/{uuid}/status-billing',
+            '/v1/aaas/process/{account_id}/billings/{payment_slip_number}',
+        ],
+    },
+};
+
+const endpointInput = document.getElementById('endpoint');
+const endpointDropdown = document.getElementById('endpointDropdown');
+
+function buildEndpointList() {
+    const list = [];
+    Object.keys(IAAS_GROUPS).forEach((key) => {
+        const group = IAAS_GROUPS[key];
+        group.endpoints.forEach((ep) => {
+            list.push(ep);
+        });
+    });
+    return list;
+}
+
+const ALL_ENDPOINTS = buildEndpointList();
+
+function renderEndpointDropdown(filterValue) {
+    const term = (filterValue || '').toLowerCase().trim();
+    const filtered = term
+        ? ALL_ENDPOINTS.filter((ep) => ep.toLowerCase().includes(term))
+        : ALL_ENDPOINTS;
+
+    if (!filtered.length) {
+        endpointDropdown.style.display = 'none';
+        endpointDropdown.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    filtered.forEach((ep) => {
+        const safeValue = ep.replace(/"/g, '&quot;');
+        html += `<button
+            type="button"
+            data-endpoint="${safeValue}"
+            style="display:block;width:100%;text-align:left;padding:6px 10px;border:0;background:#ffffff;cursor:pointer;font-size:13px;color:#111827;border-bottom:1px solid #f3f4f6;box-sizing:border-box"
+            onmouseover="this.style.backgroundColor='#f3f4f6'"
+            onmouseout="this.style.backgroundColor='#ffffff'"
+        >
+            <span style="color:#111827;display:inline-block;">${safeValue}</span>
+        </button>`;
+    });
+
+    endpointDropdown.innerHTML = html;
+    endpointDropdown.style.display = 'block';
+}
+
+endpointInput.addEventListener('focus', () => {
+    renderEndpointDropdown('');
+});
+
+endpointInput.addEventListener('input', (e) => {
+    renderEndpointDropdown(e.target.value);
+});
+
+document.addEventListener('click', (e) => {
+    if (!endpointDropdown.contains(e.target) && e.target !== endpointInput) {
+        endpointDropdown.style.display = 'none';
+    }
+});
+
+endpointDropdown.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-endpoint]');
+    if (!btn) return;
+    const value = btn.getAttribute('data-endpoint');
+    endpointInput.value = value;
+    endpointDropdown.style.display = 'none';
+    endpointInput.focus();
+});
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
 
