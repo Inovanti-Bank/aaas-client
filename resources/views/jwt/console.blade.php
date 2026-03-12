@@ -62,40 +62,73 @@
             </div>
         </form>
 
-        <div style="margin-top:18px;margin-bottom:8px; position:relative">
-            <h2 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
-                <span>JWT gerado</span>
-                <button type="button"
-                        onclick="copyCardContent('jwtToken')"
-                        style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
-                    Copiar
-                </button>
-            </h2>
-            <pre id="jwtToken" style="min-height:80px;white-space:pre-wrap"></pre>
+        <div style="margin-top:18px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+                 onclick="toggleCollapse('jwtTokenBody','jwtTokenChevron')">
+                <h2 style="margin:0 0 6px">JWT gerado</h2>
+                <span id="jwtTokenChevron" style="font-size:18px;line-height:1">▼</span>
+            </div>
+            <div id="jwtTokenBody" style="margin-top:8px;display:none">
+                <div style="position:relative">
+                    <button id="jwtTokenCopyBtn" type="button"
+                            onclick="copyCardContent('jwtToken')"
+                            style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
+                        Copiar
+                    </button>
+                    <pre id="jwtToken" style="min-height:80px;white-space:pre-wrap;margin:0"></pre>
+                </div>
+            </div>
         </div>
 
-        <div class="result-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div>
-                <h3 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
-                    <span>Status</span>
-                    <button type="button"
-                            onclick="copyCardContent('resultSummary')"
-                            style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
-                        Copiar
-                    </button>
-                </h3>
-                <pre id="resultSummary" style="min-height:160px;white-space:pre-wrap"></pre>
+        <div style="margin-top:18px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+                 onclick="toggleCollapse('jwtDecoderBody','jwtDecoderChevron')">
+                <h2 style="margin:0 0 6px">Decodificador de JWT</h2>
+                <span id="jwtDecoderChevron" style="font-size:18px;line-height:1">▼</span>
             </div>
-            <div>
-                <h3 style="margin:0 0 6px; display:flex; justify-content:space-between; align-items:center">
-                    <span>Response</span>
-                    <button type="button"
-                            onclick="copyCardContent('resultRaw')"
-                            style="background:transparent;color:#6b7280;border:none;padding:2px 4px;font-size:12px;cursor:pointer">
-                        Copiar
-                    </button>
-                </h3>
-                <pre id="resultRaw" style="min-height:160px;white-space:pre-wrap"></pre>
+            <div id="jwtDecoderBody" style="margin-top:8px;display:none">
+                <p class="muted">Cole um JWT abaixo ou deixe vazio para usar o JWT gerado acima. O payload será exibido como JSON.</p>
+                <textarea id="jwtPayloadInput" rows="4" placeholder="eyJhbGciOiJFUzUxMiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIifQ.SignatureAqui"></textarea>
+                <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                    <button type="button" onclick="decodeJwtPayloadToJson()">Ver payload (JSON)</button>
+                    <span class="muted" style="font-size:12px">Não é necessário nenhuma chave para visualizar o conteúdo.</span>
+                </div>
+                <h3 style="margin:12px 0 6px">Payload como JSON</h3>
+                <pre id="jwtPayloadJson" style="min-height:80px;white-space:pre-wrap"></pre>
+            </div>
+        </div>
+
+        <div style="margin-top:18px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+                 onclick="toggleCollapse('resultSectionBody','resultSectionChevron')">
+                <h2 style="margin:0 0 6px">Resultados da requisição</h2>
+                <span id="resultSectionChevron" style="font-size:18px;line-height:1">▼</span>
+            </div>
+            <div id="resultSectionBody" style="margin-top:8px;display:none">
+                <div class="result-grid" style="display:grid;grid-template-columns:1fr;gap:12px">
+                    <div>
+                        <h3 style="margin:0 0 6px;">Status</h3>
+                        <div style="position:relative">
+                            <button id="resultSummaryCopyBtn" type="button"
+                                    onclick="copyCardContent('resultSummary')"
+                                    style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
+                                Copiar
+                            </button>
+                            <pre id="resultSummary" style="min-height:160px;white-space:pre-wrap;margin:0"></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 6px;">Response</h3>
+                        <div style="position:relative">
+                            <button id="resultRawCopyBtn" type="button"
+                                    onclick="copyCardContent('resultRaw')"
+                                    style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
+                                Copiar
+                            </button>
+                            <pre id="resultRaw" style="min-height:160px;white-space:pre-wrap;margin:0"></pre>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -257,6 +290,76 @@ endpointDropdown.addEventListener('click', (e) => {
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
 
+function toggleCopyVisibility(preId, btnId) {
+    const pre = document.getElementById(preId);
+    const btn = document.getElementById(btnId);
+    if (!pre || !btn) return;
+    const hasContent = (pre.textContent || '').trim().length > 0;
+    btn.style.display = hasContent ? 'inline-block' : 'none';
+}
+
+function toggleCollapse(bodyId, chevronId) {
+    const body = document.getElementById(bodyId);
+    const chev = document.getElementById(chevronId);
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || body.style.display === '';
+    body.style.display = isHidden ? 'block' : 'none';
+    if (chev) {
+        chev.textContent = isHidden ? '▲' : '▼';
+    }
+}
+
+function expandResultSection() {
+    const body = document.getElementById('resultSectionBody');
+    const chev = document.getElementById('resultSectionChevron');
+    if (body) body.style.display = 'block';
+    if (chev) chev.textContent = '▲';
+}
+
+function base64UrlDecode(str) {
+    let output = str.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = output.length % 4;
+    if (pad) {
+        output += '='.repeat(4 - pad);
+    }
+    return atob(output);
+}
+
+function decodeJwtPayloadToJson() {
+    const inputEl = document.getElementById('jwtPayloadInput');
+    const outputEl = document.getElementById('jwtPayloadJson');
+    if (!outputEl) return;
+
+    const manualToken = inputEl ? inputEl.value.trim() : '';
+    const autoToken = jwtTokenEl ? (jwtTokenEl.textContent || '').trim() : '';
+    const token = manualToken || autoToken;
+
+    if (!token) {
+        outputEl.textContent = 'Informe um JWT ou gere um token acima.';
+        return;
+    }
+
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            outputEl.textContent = 'Formato de JWT inválido. Esperado: header.payload.signature';
+            return;
+        }
+
+        const payloadB64 = parts[1];
+        const jsonStr = base64UrlDecode(payloadB64);
+
+        try {
+            const obj = JSON.parse(jsonStr);
+            outputEl.textContent = pretty(obj);
+        } catch (e) {
+            outputEl.textContent = jsonStr;
+        }
+    } catch (e) {
+        outputEl.textContent = 'Erro ao decodificar payload: ' + (e && e.message ? e.message : String(e));
+    }
+}
+
 async function copyCardContent(preId) {
     const el = document.getElementById(preId);
     if (!el) return;
@@ -290,6 +393,7 @@ form.addEventListener('submit', async (ev) => {
     statusText.textContent = '';
     if (jwtTokenEl) {
         jwtTokenEl.textContent = 'Gerando...';
+        toggleCopyVisibility('jwtToken', 'jwtTokenCopyBtn');
     }
 
     const payload = {
@@ -317,6 +421,9 @@ form.addEventListener('submit', async (ev) => {
             body: data.body ?? null,
         };
         resultSummaryEl.textContent = pretty(summary);
+        toggleCopyVisibility('resultSummary', 'resultSummaryCopyBtn');
+
+        expandResultSection();
 
         if (jwtTokenEl) {
             if (data.token) {
@@ -324,6 +431,7 @@ form.addEventListener('submit', async (ev) => {
             } else {
                 jwtTokenEl.textContent = '— nenhum token retornado —';
             }
+            toggleCopyVisibility('jwtToken', 'jwtTokenCopyBtn');
         }
 
         const rawCandidate = data.raw ?? data.body ?? null;
@@ -339,6 +447,7 @@ form.addEventListener('submit', async (ev) => {
         } else {
             resultRawEl.textContent = pretty(rawCandidate);
         }
+        toggleCopyVisibility('resultRaw', 'resultRawCopyBtn');
     } catch(err){
         resultSummaryEl.textContent = 'Request failed: ' + err.message;
         resultRawEl.textContent = '';
