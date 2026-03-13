@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Utils\GenerateSignedJwt;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Exception;
 
 class JwtController extends Controller
@@ -15,7 +17,7 @@ class JwtController extends Controller
         return view('jwt.console', ['baseUrl' => $baseUrl]);
     }
 
-    public function send(\Illuminate\Http\Request $request): JsonResponse
+    public function send(Request $request): JsonResponse
     {
         $data = $request->validate([
             'endpoint' => 'required|string',
@@ -61,7 +63,7 @@ class JwtController extends Controller
                 $headers['Content-Type'] = 'application/json';
             }
 
-            $response = \Illuminate\Support\Facades\Http::withHeaders($headers)->send($method, $fullUrl, $options);
+            $response = Http::withHeaders($headers)->send($method, $fullUrl, $options);
 
             $raw = $response->body();
             $decodedResponse = json_decode($raw, true);
