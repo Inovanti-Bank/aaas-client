@@ -135,6 +135,7 @@
 
 <script>
 const form = document.getElementById('jwtForm');
+const sendBtn = document.getElementById('sendBtn');
 const resultSummaryEl = document.getElementById('resultSummary');
 const resultRawEl = document.getElementById('resultRaw');
 const statusText = document.getElementById('statusText');
@@ -209,12 +210,12 @@ const IAAS_GROUPS = {
             '/v1/aaas/process/{account_id}/batch/{batch_id}/return-file/{format}',
             '/v1/aaas/process/{account_id}/return-file/{format}',
             '/v1/aaas/process/{account_id}/batches',
-            '/v1/aaas/process/{account_id}/batch/{uuid}/',
+            '/v1/aaas/process/{account_id}/batches/{uuid}',
             '/v1/aaas/process/{account_id}/billings',
             '/v1/aaas/process/{account_id}/billings/{uuid}',
             '/v1/aaas/process/{account_id}/billings/batch/{batch_uuid}',
             '/v1/aaas/process/{uuid}/status-billing',
-            '/v1/aaas/process/{account_id}/billings/{payment_slip_number}',
+            '/v1/aaas/process/{account_id}/billings/{uuid}',
         ],
     },
 };
@@ -388,6 +389,12 @@ async function copyCardContent(preId) {
 
 form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+    }
+
     resultSummaryEl.textContent = 'Sending...';
     resultRawEl.textContent = 'Sending...';
     statusText.textContent = '';
@@ -451,6 +458,11 @@ form.addEventListener('submit', async (ev) => {
     } catch(err){
         resultSummaryEl.textContent = 'Request failed: ' + err.message;
         resultRawEl.textContent = '';
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send request';
+        }
     }
 });
 </script>
