@@ -1,13 +1,13 @@
 ## AaaS Client
 
-Este projeto fornece uma interface Laravel para geração de JWT assinado e consumo dos endpoints do serviço Account as a Service do IBaaS.
+Este projeto fornece uma interface Laravel para testar chamadas de IAaas e IBaas.
 
 Com ele, é possível:
 
-- configurar a URL base do ambiente IBaaS;
-- informar a `API_KEY` gerada no painel do IBaaS;
-- assinar requisições com chave ECDSA SHA-512;
-- testar chamadas da API por meio da interface web do projeto.
+- escolher o serviço (`IAaas` ou `IBaas`) no header da interface;
+- testar endpoints dos dois serviços sem misturar as listas;
+- usar JWT assinado apenas no fluxo do `IAaas`;
+- usar login/refresh/logout do `IBaas` com sessão de token.
 
 ## Requisitos
 
@@ -96,11 +96,11 @@ Altere a variável `BASE_URL` no arquivo `.env` para apontar para o ambiente cor
 BASE_URL=https://seu-ambiente-ibaas
 ```
 
-### 8. Gerar a API Key no IBaaS
+### 8. Chave e API Key para IAaas
 
-### Envio da chave pública no painel IBaaS
+### Envio da chave pública no painel (IAaas)
 
-A chave pública deve ser enviada pelo painel de controle do IBaaS.
+A chave pública deve ser enviada pelo painel de controle para uso no fluxo IAaas.
 
 ### Pré-requisito: ativar dupla autenticação com TOTP
 
@@ -144,10 +144,10 @@ $ php artisan serve
 
 Depois disso, acesse o endereço exibido no terminal, normalmente `http://127.0.0.1:8000`.
 
-Depois de cadastrar sua chave pública no painel do IBaaS, gere a `API_KEY` e configure no `.env`:
+Configure no `.env` as credenciais por serviço:
 
 ```dotenv
-API_KEY=sua_api_key
+API_KEY_IAAAS=sua_api_key_iaaas
 ```
 
 ## Variáveis de ambiente importantes
@@ -158,7 +158,7 @@ As principais variáveis utilizadas neste projeto são:
 JWT_PRIVATE_KEY_PATH=/home/seu-usuario/projeto/storage/keys/jwtECDSASHA512.key
 JWT_PUBLIC_KEY_PATH=/home/seu-usuario/projeto/storage/keys/jwtECDSASHA512.key.pub
 BASE_URL=https://seu-ambiente-ibaas
-API_KEY=
+API_KEY_IAAAS=
 ```
 
 ## Documentação da API IBaaS

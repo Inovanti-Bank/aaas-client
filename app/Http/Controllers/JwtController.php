@@ -16,6 +16,7 @@ class JwtController extends Controller
 
         return view('jwt.console', [
             'baseUrl' => $baseUrl,
+            'endpoints' => config('aaas_endpoints', []),
         ]);
     }
 
@@ -32,6 +33,7 @@ class JwtController extends Controller
 
         $method = strtoupper($data['method'] ?? 'GET');
         $endpoint = $data['endpoint'];
+        $normalizedEndpoint = '/' . ltrim($endpoint, '/');
         $queryParams = trim($data['query_params'] ?? '');
         $service = $data['service'] ?? 'iaaas';
         $baseUrl = $this->resolveBaseUrl($service, $data['base_url'] ?? null);
@@ -46,25 +48,38 @@ class JwtController extends Controller
             $body = $decoded;
         }
 
-        $fullUrl = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
+        $fullUrl = rtrim($baseUrl, '/') . '/' . ltrim($normalizedEndpoint, '/');
         if ($queryParams !== '') {
             $qp = ltrim($queryParams, '?');
             $fullUrl .= '?' . $qp;
         }
 
         try {
-            $privateKey = (new GenerateSignedJwt())->resolvePrivateKey();
-            $token = (new GenerateSignedJwt())->call($privateKey, $apiKey, $endpoint, $method, $body);
+            $headers = ['Accept' => 'application/json'];
+            $responseToken = null;
 
-            $headers = [
-                'X-auth-token' => 'Bearer ' . $token,
-                'Accept' => 'application/json',
-            ];
-            if ($service === 'iaaas' && $apiKey !== '') {
-                $headers['X-api-key'] = $apiKey;
+            if ($service === 'iaaas') {
+                $privateKey = (new GenerateSignedJwt())->resolvePrivateKey();
+                $responseToken = (new GenerateSignedJwt())->call($privateKey, $apiKey, $endpoint, $method, $body);
+                $headers['X-auth-token'] = 'Bearer ' . $responseToken;
+                if ($apiKey !== '') {
+                    $headers['X-api-key'] = $apiKey;
+                }
+            } else {
+                $sessionToken = (string) $request->session()->get('ibaas.token', '');
+                $isAuthLogin = in_array($normalizedEndpoint, ['/v1/auth/login', '/v1/auth/login-webhook'], true);
+                if ($sessionToken !== '' && (!$this->isIbaasAuthEndpoint($normalizedEndpoint) || $normalizedEndpoint === '/v1/auth/logout') && !$isAuthLogin) {
+                    $headers['Authorization'] = 'Bearer ' . $sessionToken;
+                }
             }
 
             $options = [];
+            if ($service === 'ibaas' && $normalizedEndpoint === '/v1/auth/refresh' && $body === null) {
+                $savedRefreshToken = (string) $request->session()->get('ibaas.refresh_token', '');
+                if ($savedRefreshToken !== '') {
+                    $body = ['refresh_token' => $savedRefreshToken];
+                }
+            }
             if ($body !== null) {
                 $options['body'] = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 $headers['Content-Type'] = 'application/json';
@@ -76,13 +91,21 @@ class JwtController extends Controller
             $decodedResponse = json_decode($raw, true);
             $bodyResponse = json_last_error() === JSON_ERROR_NONE ? $decodedResponse : $raw;
 
+            if ($service === 'ibaas') {
+                $this->syncIbaasSessionTokens($request, $normalizedEndpoint, $bodyResponse, $response->successful());
+            }
+
             return response()->json([
                 'status' => $response->status(),
                 'ok' => $response->successful(),
                 'headers' => $response->headers(),
                 'body' => $bodyResponse,
                 'raw' => $raw,
-                'token' => $token,
+                'token' => $responseToken,
+                'ibaas_session' => [
+                    'has_token' => (string) $request->session()->get('ibaas.token', '') !== '',
+                    'has_refresh_token' => (string) $request->session()->get('ibaas.refresh_token', '') !== '',
+                ],
             ], $response->status());
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -94,7 +117,11 @@ class JwtController extends Controller
         if (!empty($customBaseUrl)) {
             return $customBaseUrl;
         }
-        return (string) (config('services.aaas.iaaas.base_url') ?? url('/'));
+        if ($service === 'iaaas') {
+            return (string) (config('services.aaas.iaaas.base_url') ?? url('/'));
+        }
+
+        return (string) (config('services.aaas.ibaas.base_url') ?? url('/'));
     }
 
     private function resolveApiKey(string $service): string
@@ -102,5 +129,32 @@ class JwtController extends Controller
         return $service === 'iaaas'
             ? (string) (config('services.aaas.iaaas.api_key') ?? '')
             : '';
+    }
+
+    private function syncIbaasSessionTokens(Request $request, string $endpoint, mixed $bodyResponse, bool $ok): void
+    {
+        if ($endpoint === '/v1/auth/logout' && $ok) {
+            $request->session()->forget(['ibaas.token', 'ibaas.refresh_token']);
+            return;
+        }
+
+        if (!is_array($bodyResponse)) {
+            return;
+        }
+
+        $token = data_get($bodyResponse, 'authorization.token');
+        $refreshToken = data_get($bodyResponse, 'authorization.refresh_token');
+
+        if (is_string($token) && $token !== '') {
+            $request->session()->put('ibaas.token', $token);
+        }
+        if (is_string($refreshToken) && $refreshToken !== '') {
+            $request->session()->put('ibaas.refresh_token', $refreshToken);
+        }
+    }
+
+    private function isIbaasAuthEndpoint(string $endpoint): bool
+    {
+        return str_starts_with($endpoint, '/v1/auth/');
     }
 }
