@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'aaas' => [
+        'iaaas' => [
+            'base_url' => env('BASE_URL'),
+            'api_key' => env('API_KEY_IAAAS', env('API_KEY')),
+        ],
+        'ibaas' => [
+            'base_url' => env('BASE_URL'),
+        ],
+    ],
+
 ];

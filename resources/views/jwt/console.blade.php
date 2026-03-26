@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>AaaS</title>
+    <title>Humu Service</title>
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
@@ -14,21 +14,36 @@
         label{display:block;font-weight:600;margin-bottom:6px}
         input[type=text], select, textarea{width:100%;box-sizing:border-box;max-width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px}
         button{background:#111827;color:#fff;padding:8px 12px;border-radius:6px;border:none;cursor:pointer}
-        pre{background:#0f1724;color:#e6edf3;padding:12px;border-radius:6px;overflow:auto}
+        pre{background:#0f1724;color:#e6edf3;padding:12px;border-radius:6px;overflow:auto;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;box-sizing:border-box}
         .muted{color:#6b7280;font-size:13px}
         .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .header-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+        .service-switch{display:flex;gap:8px;align-items:center}
+        .service-btn{background:#fff;border:1px solid #d1d5db;color:#111827;padding:8px 12px;border-radius:999px}
+        .service-btn.active{background:#111827;color:#fff;border-color:#111827}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 style="margin:0 0 12px">AaaS</h1>
-        <p class="muted">Preencha os campos abaixo, gere o token assinado e envie a requisição para a API. O resultado e o JWT serão exibidos em JSON.</p>
+        <div class="header-row">
+            <div>
+                <h1 style="margin:0 0 12px">Humu Service</h1>
+                <p class="muted">IAaas usa JWT assinado. IBaas usa login com token de sessão e refresh token.</p>
+            </div>
+            <div class="service-switch">
+                <span class="muted">Serviço:</span>
+                <button type="button" id="serviceIAaasBtn" class="service-btn active" data-service="iaaas">IAaas</button>
+                <button type="button" id="serviceIBaasBtn" class="service-btn" data-service="ibaas">IBaas</button>
+            </div>
+        </div>
 
         <form id="jwtForm" style="margin-top:16px">
             @csrf
+            <input id="service" name="service" type="hidden" value="iaaas" />
             <div style="margin-bottom:12px">
-                <label for="base_url">Base URL</label>
+                <label for="base_url" id="baseUrlLabel">Base URL</label>
                 <input id="base_url" name="base_url" type="text" value="{{ $baseUrl }}" />
+                <p class="muted" id="baseUrlHint" style="margin:6px 0 0;display:none">No IBaas, endpoints de auth usam a base fixa de autenticação configurada no backend.</p>
             </div>
 
             <div style="margin-bottom:12px; position:relative">
@@ -62,7 +77,7 @@
             </div>
         </form>
 
-        <div style="margin-top:18px;margin-bottom:8px;">
+        <div id="jwtTokenSection" style="margin-top:18px;margin-bottom:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
                  onclick="toggleCollapse('jwtTokenBody','jwtTokenChevron')">
                 <h2 style="margin:0 0 6px">JWT gerado</h2>
@@ -75,12 +90,12 @@
                             style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
                         Copiar
                     </button>
-                    <pre id="jwtToken" style="min-height:80px;white-space:pre-wrap;margin:0"></pre>
+                    <pre id="jwtToken" style="min-height:80px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:0"></pre>
                 </div>
             </div>
         </div>
 
-        <div style="margin-top:18px;margin-bottom:8px;">
+        <div id="jwtDecoderSection" style="margin-top:18px;margin-bottom:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
                  onclick="toggleCollapse('jwtDecoderBody','jwtDecoderChevron')">
                 <h2 style="margin:0 0 6px">Decodificador de JWT</h2>
@@ -107,17 +122,6 @@
             <div id="resultSectionBody" style="margin-top:8px;display:none">
                 <div class="result-grid" style="display:grid;grid-template-columns:1fr;gap:12px">
                     <div>
-                        <h3 style="margin:0 0 6px;">Status</h3>
-                        <div style="position:relative">
-                            <button id="resultSummaryCopyBtn" type="button"
-                                    onclick="copyCardContent('resultSummary')"
-                                    style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
-                                Copiar
-                            </button>
-                            <pre id="resultSummary" style="min-height:160px;white-space:pre-wrap;margin:0"></pre>
-                        </div>
-                    </div>
-                    <div>
                         <h3 style="margin:0 0 6px;">Response</h3>
                         <div style="position:relative">
                             <button id="resultRawCopyBtn" type="button"
@@ -126,6 +130,17 @@
                                 Copiar
                             </button>
                             <pre id="resultRaw" style="min-height:160px;white-space:pre-wrap;margin:0"></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 6px;">Request</h3>
+                        <div style="position:relative">
+                            <button id="resultSummaryCopyBtn" type="button"
+                                    onclick="copyCardContent('resultSummary')"
+                                    style="position:absolute;top:6px;right:6px;z-index:1;background:rgba(15,23,42,0.9);color:#e5e7eb;border:none;padding:4px 8px;font-size:11px;border-radius:4px;cursor:pointer;display:none">
+                                Copiar
+                            </button>
+                            <pre id="resultSummary" style="min-height:160px;white-space:pre-wrap;margin:0"></pre>
                         </div>
                     </div>
                 </div>
@@ -140,93 +155,45 @@ const resultSummaryEl = document.getElementById('resultSummary');
 const resultRawEl = document.getElementById('resultRaw');
 const statusText = document.getElementById('statusText');
 const jwtTokenEl = document.getElementById('jwtToken');
+const serviceInput = document.getElementById('service');
+const baseUrlInput = document.getElementById('base_url');
+const baseUrlLabel = document.getElementById('baseUrlLabel');
+const baseUrlHint = document.getElementById('baseUrlHint');
+const jwtTokenSection = document.getElementById('jwtTokenSection');
+const jwtDecoderSection = document.getElementById('jwtDecoderSection');
 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const serviceButtons = document.querySelectorAll('.service-btn');
 
-const IAAS_GROUPS = {
-    account: {
-        label: 'Account',
-        endpoints: [
-            '/v1/aaas/account',
-            '/v1/aaas/account/list',
-            '/v1/aaas/account/{account_id}',
-            '/v1/aaas/account/{account_id}/details',
-            '/v1/aaas/account/{account_id}/phone/unlink',
-            '/v1/aaas/account/{account_id}/phone',
-            '/v1/aaas/account/{account_id}/statement',
-            '/v1/aaas/account/{account_id}/balance/lock',
-            '/v1/aaas/account/{account_id}/balance/unlock',
-            '/v1/aaas/account/{account_id}/payment/refund',
-        ],
+const SERVICE_DEFAULTS = {
+    iaaas: {
+        baseUrl: @json($baseUrl),
     },
-    cashIn: {
-        label: 'Cash In',
-        endpoints: [
-            '/v1/aaas/cash-in/{account_id}/pix/static-qr-code',
-            '/v1/aaas/cash-in/{account_id}/pix/dynamic-qr-code',
-        ],
-    },
-    cashOut: {
-        label: 'Cash Out',
-        endpoints: [
-            '/v1/aaas/cash-out/make-pix-transfer',
-            '/v1/aaas/cash-out/make-non-priority-pix-transfer',
-            '/v1/aaas/cash-out/make-pix-transfer-only-with-alias',
-            '/v1/aaas/cash-out/decode-qr-code',
-            '/v1/aaas/cash-out/make-bank-transfer',
-            '/v1/aaas/cash-out/make-bank-slip-payment',
-            '/v1/aaas/cash-out/make-utilities-payment',
-            '/v1/aaas/cash-out/make-internal-transfer',
-            '/v1/aaas/cash-out/return-internal-transfer',
-        ],
-    },
-    transaction: {
-        label: 'Transaction',
-        endpoints: [
-            '/v1/aaas/transaction/{transaction_id}',
-            '/v1/aaas/transaction/withdraw/{withdraw_id}',
-        ],
-    },
-    webhook: {
-        label: 'Webhook',
-        endpoints: [
-            '/v1/aaas/webhooks',
-            '/v1/aaas/webhooks/list',
-            '/v1/aaas/webhooks/{webhook_id}',
-            '/v1/aaas/webhooks/{webhook_id}/update',
-            '/v1/aaas/webhooks/{webhook_id}/delete',
-        ],
-    },
-    batchesAndBillings: {
-        label: 'Batches and Billings',
-        endpoints: [
-            '/v1/aaas/process/{file_type}/validate-shipment',
-            '/v1/validate/cnab400',
-            '/v1/aaas/process/{account_id}/file-type/{file_type}/send-shipment',
-            '/v1/aaas/process/{account_id}/send-invoice',
-            '/v1/aaas/process/{account_id}/send-recharge',
-            '/v1/aaas/process/{account_id}/{payment_slip_number}/get-payment-slip/pdf',
-            '/v1/aaas/process/{account_id}/batches/{uuid}/slips/zip',
-            '/v1/aaas/process/{account_id}/{payment_slip_number}/get-payment-slip',
-            '/v1/aaas/process/{account_id}/batch/{batch_id}/return-file/{format}',
-            '/v1/aaas/process/{account_id}/return-file/{format}',
-            '/v1/aaas/process/{account_id}/batches',
-            '/v1/aaas/process/{account_id}/batches/{uuid}',
-            '/v1/aaas/process/{account_id}/billings',
-            '/v1/aaas/process/{account_id}/billings/{uuid}',
-            '/v1/aaas/process/{account_id}/billings/batch/{batch_uuid}',
-            '/v1/aaas/process/{uuid}/status-billing',
-            '/v1/aaas/process/{account_id}/billings/{uuid}',
-        ],
+    ibaas: {
+        baseUrl: @json($baseUrl),
     },
 };
 
+const IAAS_GROUPS = @json(($endpoints['iaaas_groups'] ?? []));
+const IBAAS_ENDPOINTS = @json(array_values(array_unique($endpoints['ibaas_endpoints'] ?? [])));
+
 const endpointInput = document.getElementById('endpoint');
 const endpointDropdown = document.getElementById('endpointDropdown');
+const bodyInput = document.getElementById('body');
+const IBAAS_LOGIN_BODY_TEMPLATE = `{
+    "username": "@{{testUserName}}",
+    "password": "@{{testPassword}}"
+}`;
 
 function buildEndpointList() {
+    const selectedService = serviceInput ? serviceInput.value : 'iaaas';
+    if (selectedService === 'ibaas') {
+        return IBAAS_ENDPOINTS;
+    }
+
+    const groups = IAAS_GROUPS;
     const list = [];
-    Object.keys(IAAS_GROUPS).forEach((key) => {
-        const group = IAAS_GROUPS[key];
+    Object.keys(groups).forEach((key) => {
+        const group = groups[key];
         group.endpoints.forEach((ep) => {
             list.push(ep);
         });
@@ -234,7 +201,7 @@ function buildEndpointList() {
     return list;
 }
 
-const ALL_ENDPOINTS = buildEndpointList();
+let ALL_ENDPOINTS = buildEndpointList();
 
 function renderEndpointDropdown(filterValue) {
     const term = (filterValue || '').toLowerCase().trim();
@@ -271,6 +238,7 @@ endpointInput.addEventListener('focus', () => {
 });
 
 endpointInput.addEventListener('input', (e) => {
+    maybeApplyIbaasLoginBody(e.target.value);
     renderEndpointDropdown(e.target.value);
 });
 
@@ -285,8 +253,64 @@ endpointDropdown.addEventListener('click', (e) => {
     if (!btn) return;
     const value = btn.getAttribute('data-endpoint');
     endpointInput.value = value;
+    maybeApplyIbaasLoginBody(value);
     endpointDropdown.style.display = 'none';
     endpointInput.focus();
+});
+
+function maybeApplyIbaasLoginBody(endpointValue) {
+    const isIbaas = serviceInput && serviceInput.value === 'ibaas';
+    if (!isIbaas || !bodyInput) return;
+
+    const normalizedEndpoint = `/${String(endpointValue || '').trim().replace(/^\/+/, '')}`;
+    if (normalizedEndpoint !== '/v1/auth/login') return;
+
+    bodyInput.value = IBAAS_LOGIN_BODY_TEMPLATE;
+}
+
+function refreshServiceButtons() {
+    serviceButtons.forEach((button) => {
+        const isActive = button.dataset.service === serviceInput.value;
+        button.classList.toggle('active', isActive);
+    });
+}
+
+function refreshServiceUi() {
+    const isIbaas = serviceInput && serviceInput.value === 'ibaas';
+
+    if (jwtTokenSection) jwtTokenSection.style.display = isIbaas ? 'none' : 'block';
+    if (jwtDecoderSection) jwtDecoderSection.style.display = isIbaas ? 'none' : 'block';
+
+    if (baseUrlLabel) baseUrlLabel.textContent = isIbaas ? 'Tenant Base URL' : 'Base URL';
+    if (baseUrlHint) baseUrlHint.style.display = isIbaas ? 'block' : 'none';
+
+    if (endpointInput) {
+        endpointInput.placeholder = isIbaas ? '/v1/baas/…' : '/v1/aaas/…';
+    }
+}
+
+function changeService(nextService) {
+    if (!serviceInput || !baseUrlInput) return;
+
+    serviceInput.value = nextService;
+    ALL_ENDPOINTS = buildEndpointList();
+    endpointInput.value = '';
+    renderEndpointDropdown('');
+    refreshServiceButtons();
+
+    const defaults = SERVICE_DEFAULTS[nextService];
+    if (defaults && defaults.baseUrl) {
+        baseUrlInput.value = defaults.baseUrl;
+    }
+
+    refreshServiceUi();
+}
+
+serviceButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        const nextService = button.dataset.service || 'iaaas';
+        changeService(nextService);
+    });
 });
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
@@ -389,6 +413,8 @@ async function copyCardContent(preId) {
 
 form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    const selectedService = document.getElementById('service').value;
+    const isIbaas = selectedService === 'ibaas';
 
     if (sendBtn) {
         sendBtn.disabled = true;
@@ -398,12 +424,13 @@ form.addEventListener('submit', async (ev) => {
     resultSummaryEl.textContent = 'Sending...';
     resultRawEl.textContent = 'Sending...';
     statusText.textContent = '';
-    if (jwtTokenEl) {
+    if (jwtTokenEl && !isIbaas) {
         jwtTokenEl.textContent = 'Gerando...';
         toggleCopyVisibility('jwtToken', 'jwtTokenCopyBtn');
     }
 
     const payload = {
+        service: document.getElementById('service').value,
         base_url: document.getElementById('base_url').value,
         api_key: (document.getElementById('api_key') ? document.getElementById('api_key').value : null),
         endpoint: document.getElementById('endpoint').value,
@@ -426,19 +453,26 @@ form.addEventListener('submit', async (ev) => {
             ok: data.ok ?? null,
             headers: data.headers ?? null,
             body: data.body ?? null,
+            ibaas_session: data.ibaas_session ?? null,
         };
         resultSummaryEl.textContent = pretty(summary);
         toggleCopyVisibility('resultSummary', 'resultSummaryCopyBtn');
 
         expandResultSection();
 
-        if (jwtTokenEl) {
+        if (jwtTokenEl && !isIbaas) {
             if (data.token) {
                 jwtTokenEl.textContent = data.token;
             } else {
                 jwtTokenEl.textContent = '— nenhum token retornado —';
             }
             toggleCopyVisibility('jwtToken', 'jwtTokenCopyBtn');
+        }
+
+        if (isIbaas && data.ibaas_session) {
+            const hasToken = data.ibaas_session.has_token ? 'sim' : 'nao';
+            const hasRefresh = data.ibaas_session.has_refresh_token ? 'sim' : 'nao';
+            statusText.textContent = `Sessao IBaas: token=${hasToken}, refresh_token=${hasRefresh}`;
         }
 
         const rawCandidate = data.raw ?? data.body ?? null;
@@ -465,6 +499,9 @@ form.addEventListener('submit', async (ev) => {
         }
     }
 });
+
+refreshServiceButtons();
+refreshServiceUi();
 </script>
 </body>
 </html>
