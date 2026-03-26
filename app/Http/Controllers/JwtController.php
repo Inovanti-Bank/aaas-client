@@ -12,9 +12,11 @@ class JwtController extends Controller
 {
     public function showConsole()
     {
-        $baseUrl = env('BASE_URL', url('/'));
+        $baseUrl = (string) (config('services.aaas.iaaas.base_url') ?? url('/'));
 
-        return view('jwt.console', ['baseUrl' => $baseUrl]);
+        return view('jwt.console', [
+            'baseUrl' => $baseUrl,
+        ]);
     }
 
     public function send(Request $request): JsonResponse
@@ -25,12 +27,15 @@ class JwtController extends Controller
             'query_params' => 'nullable|string',
             'body' => 'nullable|string',
             'base_url' => 'sometimes|string',
+            'service' => 'sometimes|string|in:iaaas,ibaas',
         ]);
 
         $method = strtoupper($data['method'] ?? 'GET');
         $endpoint = $data['endpoint'];
         $queryParams = trim($data['query_params'] ?? '');
-        $baseUrl = $data['base_url'] ?? env('BASE_URL', url('/'));
+        $service = $data['service'] ?? 'iaaas';
+        $baseUrl = $this->resolveBaseUrl($service, $data['base_url'] ?? null);
+        $apiKey = $this->resolveApiKey($service);
 
         $body = null;
         if (isset($data['body']) && $data['body'] !== '') {
@@ -49,13 +54,15 @@ class JwtController extends Controller
 
         try {
             $privateKey = (new GenerateSignedJwt())->resolvePrivateKey();
-            $token = (new GenerateSignedJwt())->call($privateKey, env('API_KEY'), $endpoint, $method, $body);
+            $token = (new GenerateSignedJwt())->call($privateKey, $apiKey, $endpoint, $method, $body);
 
             $headers = [
-                'X-api-key' => env('API_KEY'),
                 'X-auth-token' => 'Bearer ' . $token,
                 'Accept' => 'application/json',
             ];
+            if ($service === 'iaaas' && $apiKey !== '') {
+                $headers['X-api-key'] = $apiKey;
+            }
 
             $options = [];
             if ($body !== null) {
@@ -80,5 +87,20 @@ class JwtController extends Controller
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    private function resolveBaseUrl(string $service, ?string $customBaseUrl): string
+    {
+        if (!empty($customBaseUrl)) {
+            return $customBaseUrl;
+        }
+        return (string) (config('services.aaas.iaaas.base_url') ?? url('/'));
+    }
+
+    private function resolveApiKey(string $service): string
+    {
+        return $service === 'iaaas'
+            ? (string) (config('services.aaas.iaaas.api_key') ?? '')
+            : '';
     }
 }

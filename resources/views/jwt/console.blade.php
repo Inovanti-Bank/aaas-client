@@ -17,15 +17,29 @@
         pre{background:#0f1724;color:#e6edf3;padding:12px;border-radius:6px;overflow:auto}
         .muted{color:#6b7280;font-size:13px}
         .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .header-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+        .service-switch{display:flex;gap:8px;align-items:center}
+        .service-btn{background:#fff;border:1px solid #d1d5db;color:#111827;padding:8px 12px;border-radius:999px}
+        .service-btn.active{background:#111827;color:#fff;border-color:#111827}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 style="margin:0 0 12px">AaaS</h1>
-        <p class="muted">Preencha os campos abaixo, gere o token assinado e envie a requisição para a API. O resultado e o JWT serão exibidos em JSON.</p>
+        <div class="header-row">
+            <div>
+                <h1 style="margin:0 0 12px">AaaS</h1>
+                <p class="muted">Preencha os campos abaixo, gere o token assinado e envie a requisição para a API. O resultado e o JWT serão exibidos em JSON.</p>
+            </div>
+            <div class="service-switch">
+                <span class="muted">Serviço:</span>
+                <button type="button" id="serviceIAaasBtn" class="service-btn active" data-service="iaaas">IAaas</button>
+                <button type="button" id="serviceIBaasBtn" class="service-btn" data-service="ibaas">IBaas</button>
+            </div>
+        </div>
 
         <form id="jwtForm" style="margin-top:16px">
             @csrf
+            <input id="service" name="service" type="hidden" value="iaaas" />
             <div style="margin-bottom:12px">
                 <label for="base_url">Base URL</label>
                 <input id="base_url" name="base_url" type="text" value="{{ $baseUrl }}" />
@@ -140,7 +154,19 @@ const resultSummaryEl = document.getElementById('resultSummary');
 const resultRawEl = document.getElementById('resultRaw');
 const statusText = document.getElementById('statusText');
 const jwtTokenEl = document.getElementById('jwtToken');
+const serviceInput = document.getElementById('service');
+const baseUrlInput = document.getElementById('base_url');
 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const serviceButtons = document.querySelectorAll('.service-btn');
+
+const SERVICE_DEFAULTS = {
+    iaaas: {
+        baseUrl: @json($baseUrl),
+    },
+    ibaas: {
+        baseUrl: @json($baseUrl),
+    },
+};
 
 const IAAS_GROUPS = {
     account: {
@@ -220,13 +246,25 @@ const IAAS_GROUPS = {
     },
 };
 
+const IBAAS_GROUPS = Object.fromEntries(
+    Object.entries(IAAS_GROUPS).map(([key, group]) => [
+        key,
+        {
+            ...group,
+            endpoints: group.endpoints.map((endpoint) => endpoint.replace('/aaas/', '/ibaas/')),
+        },
+    ])
+);
+
 const endpointInput = document.getElementById('endpoint');
 const endpointDropdown = document.getElementById('endpointDropdown');
 
 function buildEndpointList() {
+    const selectedService = serviceInput ? serviceInput.value : 'iaaas';
+    const groups = selectedService === 'ibaas' ? IBAAS_GROUPS : IAAS_GROUPS;
     const list = [];
-    Object.keys(IAAS_GROUPS).forEach((key) => {
-        const group = IAAS_GROUPS[key];
+    Object.keys(groups).forEach((key) => {
+        const group = groups[key];
         group.endpoints.forEach((ep) => {
             list.push(ep);
         });
@@ -234,7 +272,7 @@ function buildEndpointList() {
     return list;
 }
 
-const ALL_ENDPOINTS = buildEndpointList();
+let ALL_ENDPOINTS = buildEndpointList();
 
 function renderEndpointDropdown(filterValue) {
     const term = (filterValue || '').toLowerCase().trim();
@@ -287,6 +325,35 @@ endpointDropdown.addEventListener('click', (e) => {
     endpointInput.value = value;
     endpointDropdown.style.display = 'none';
     endpointInput.focus();
+});
+
+function refreshServiceButtons() {
+    serviceButtons.forEach((button) => {
+        const isActive = button.dataset.service === serviceInput.value;
+        button.classList.toggle('active', isActive);
+    });
+}
+
+function changeService(nextService) {
+    if (!serviceInput || !baseUrlInput) return;
+
+    serviceInput.value = nextService;
+    ALL_ENDPOINTS = buildEndpointList();
+    endpointInput.value = '';
+    renderEndpointDropdown('');
+    refreshServiceButtons();
+
+    const defaults = SERVICE_DEFAULTS[nextService];
+    if (defaults && defaults.baseUrl) {
+        baseUrlInput.value = defaults.baseUrl;
+    }
+}
+
+serviceButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        const nextService = button.dataset.service || 'iaaas';
+        changeService(nextService);
+    });
 });
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
@@ -404,6 +471,7 @@ form.addEventListener('submit', async (ev) => {
     }
 
     const payload = {
+        service: document.getElementById('service').value,
         base_url: document.getElementById('base_url').value,
         api_key: (document.getElementById('api_key') ? document.getElementById('api_key').value : null),
         endpoint: document.getElementById('endpoint').value,
@@ -465,6 +533,8 @@ form.addEventListener('submit', async (ev) => {
         }
     }
 });
+
+refreshServiceButtons();
 </script>
 </body>
 </html>
