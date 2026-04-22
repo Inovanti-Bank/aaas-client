@@ -81,6 +81,7 @@ return [
     'ibaas_endpoints' => [
         '/v1/auth/login-webhook',
         '/v1/auth/login',
+        '/v1/auth/login-2fa',
         '/v1/auth/refresh',
         '/v1/auth/logout',
         '/v1/baas/account/occupations',

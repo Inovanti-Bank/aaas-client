@@ -183,6 +183,11 @@ const IBAAS_LOGIN_BODY_TEMPLATE = `{
     "username": "@{{testUserName}}",
     "password": "@{{testPassword}}"
 }`;
+const IBAAS_LOGIN_2FA_BODY_TEMPLATE = `{
+    "two_factor_id": "@{{twoFactorId}}",
+    "code": "123456"
+}`;
+let lastIbaasTwoFactorId = '';
 
 function buildEndpointList() {
     const selectedService = serviceInput ? serviceInput.value : 'iaaas';
@@ -263,9 +268,14 @@ function maybeApplyIbaasLoginBody(endpointValue) {
     if (!isIbaas || !bodyInput) return;
 
     const normalizedEndpoint = `/${String(endpointValue || '').trim().replace(/^\/+/, '')}`;
-    if (normalizedEndpoint !== '/v1/auth/login') return;
-
-    bodyInput.value = IBAAS_LOGIN_BODY_TEMPLATE;
+    if (normalizedEndpoint === '/v1/auth/login') {
+        bodyInput.value = IBAAS_LOGIN_BODY_TEMPLATE;
+        return;
+    }
+    if (normalizedEndpoint === '/v1/auth/login-2fa') {
+        const template = IBAAS_LOGIN_2FA_BODY_TEMPLATE.replace('@{{twoFactorId}}', lastIbaasTwoFactorId || '@{{twoFactorId}}');
+        bodyInput.value = template;
+    }
 }
 
 function refreshServiceButtons() {
@@ -460,6 +470,10 @@ form.addEventListener('submit', async (ev) => {
 
         expandResultSection();
 
+        if (isIbaas && data.body && data.body.two_factor_required && typeof data.body.two_factor_id === 'string' && data.body.two_factor_id.trim() !== '') {
+            lastIbaasTwoFactorId = data.body.two_factor_id;
+        }
+
         if (jwtTokenEl && !isIbaas) {
             if (data.token) {
                 jwtTokenEl.textContent = data.token;
@@ -472,7 +486,12 @@ form.addEventListener('submit', async (ev) => {
         if (isIbaas && data.ibaas_session) {
             const hasToken = data.ibaas_session.has_token ? 'sim' : 'nao';
             const hasRefresh = data.ibaas_session.has_refresh_token ? 'sim' : 'nao';
-            statusText.textContent = `Sessao IBaas: token=${hasToken}, refresh_token=${hasRefresh}`;
+            const hasTwoFactorId = data.ibaas_session.has_two_factor_id ? 'sim' : 'nao';
+            if (data.body && data.body.two_factor_required) {
+                statusText.textContent = `Sessao IBaas: token=${hasToken}, refresh_token=${hasRefresh}, two_factor_pendente=sim. Use /v1/auth/login-2fa com o code.`;
+            } else {
+                statusText.textContent = `Sessao IBaas: token=${hasToken}, refresh_token=${hasRefresh}, two_factor_id=${hasTwoFactorId}`;
+            }
         }
 
         const rawCandidate = data.raw ?? data.body ?? null;

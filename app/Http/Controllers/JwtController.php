@@ -80,6 +80,15 @@ class JwtController extends Controller
                     $body = ['refresh_token' => $savedRefreshToken];
                 }
             }
+            if ($service === 'ibaas' && $normalizedEndpoint === '/v1/auth/login-2fa') {
+                $savedTwoFactorId = (string) $request->session()->get('ibaas.two_factor_id', '');
+                if ($savedTwoFactorId !== '') {
+                    $body = is_array($body) ? $body : [];
+                    if (!isset($body['two_factor_id']) || !is_string($body['two_factor_id']) || trim($body['two_factor_id']) === '') {
+                        $body['two_factor_id'] = $savedTwoFactorId;
+                    }
+                }
+            }
             if ($body !== null) {
                 $options['body'] = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 $headers['Content-Type'] = 'application/json';
@@ -105,6 +114,7 @@ class JwtController extends Controller
                 'ibaas_session' => [
                     'has_token' => (string) $request->session()->get('ibaas.token', '') !== '',
                     'has_refresh_token' => (string) $request->session()->get('ibaas.refresh_token', '') !== '',
+                    'has_two_factor_id' => (string) $request->session()->get('ibaas.two_factor_id', '') !== '',
                 ],
             ], $response->status());
         } catch (Exception $e) {
@@ -134,7 +144,7 @@ class JwtController extends Controller
     private function syncIbaasSessionTokens(Request $request, string $endpoint, mixed $bodyResponse, bool $ok): void
     {
         if ($endpoint === '/v1/auth/logout' && $ok) {
-            $request->session()->forget(['ibaas.token', 'ibaas.refresh_token']);
+            $request->session()->forget(['ibaas.token', 'ibaas.refresh_token', 'ibaas.two_factor_id']);
             return;
         }
 
@@ -142,11 +152,18 @@ class JwtController extends Controller
             return;
         }
 
+        $twoFactorRequired = (bool) data_get($bodyResponse, 'two_factor_required', false);
+        $twoFactorId = data_get($bodyResponse, 'two_factor_id');
+        if ($twoFactorRequired && is_string($twoFactorId) && $twoFactorId !== '') {
+            $request->session()->put('ibaas.two_factor_id', $twoFactorId);
+        }
+
         $token = data_get($bodyResponse, 'authorization.token');
         $refreshToken = data_get($bodyResponse, 'authorization.refresh_token');
 
         if (is_string($token) && $token !== '') {
             $request->session()->put('ibaas.token', $token);
+            $request->session()->forget('ibaas.two_factor_id');
         }
         if (is_string($refreshToken) && $refreshToken !== '') {
             $request->session()->put('ibaas.refresh_token', $refreshToken);
