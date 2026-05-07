@@ -450,19 +450,30 @@ form.addEventListener('submit', async (ev) => {
     };
 
     try{
-        const res = await fetch('/jwt/send', {
+        const fetchHeaders = { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf };
+        const localRequest = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            url: '/jwt/send',
+            headers: fetchHeaders,
+            body: payload,
+        };
+        const res = await fetch(localRequest.url, {
+            method: localRequest.method,
+            headers: fetchHeaders,
             body: JSON.stringify(payload)
+        });
+        const responseHeaders = {};
+        res.headers.forEach((value, key) => {
+            responseHeaders[key] = value;
         });
 
         const data = await res.json().catch(() => ({ raw: 'no-json-response' }));
+        const isWrappedApiResponse = Object.prototype.hasOwnProperty.call(data, 'status')
+            || Object.prototype.hasOwnProperty.call(data, 'request')
+            || Object.prototype.hasOwnProperty.call(data, 'headers');
 
         const summary = {
-            status: data.status ?? res.status,
-            ok: data.ok ?? null,
-            headers: data.headers ?? null,
-            body: data.body ?? null,
+            request: data.request ?? localRequest,
             ibaas_session: data.ibaas_session ?? null,
         };
         resultSummaryEl.textContent = pretty(summary);
@@ -494,18 +505,16 @@ form.addEventListener('submit', async (ev) => {
             }
         }
 
-        const rawCandidate = data.raw ?? data.body ?? null;
-        if (rawCandidate === null || rawCandidate === undefined) {
+        const responseSummary = {
+            status: data.status ?? res.status,
+            ok: data.ok ?? res.ok,
+            headers: data.headers ?? responseHeaders,
+            body: data.body ?? (isWrappedApiResponse ? null : data),
+        };
+        if (responseSummary.body === null && responseSummary.raw === null) {
             resultRawEl.textContent = '— no raw response —';
-        } else if (typeof rawCandidate === 'string') {
-            try {
-                const parsed = JSON.parse(rawCandidate);
-                resultRawEl.textContent = pretty(parsed);
-            } catch (e) {
-                resultRawEl.textContent = rawCandidate;
-            }
         } else {
-            resultRawEl.textContent = pretty(rawCandidate);
+            resultRawEl.textContent = pretty(responseSummary);
         }
         toggleCopyVisibility('resultRaw', 'resultRawCopyBtn');
     } catch(err){

@@ -94,6 +94,16 @@ class JwtController extends Controller
                 $headers['Content-Type'] = 'application/json';
             }
 
+            $sentRequest = [
+                'service' => $service,
+                'method' => $method,
+                'url' => $fullUrl,
+                'endpoint' => $normalizedEndpoint,
+                'headers' => $headers,
+                'body' => $body,
+                'options' => $options,
+            ];
+
             $response = Http::withHeaders($headers)->send($method, $fullUrl, $options);
 
             $raw = $response->body();
@@ -107,6 +117,7 @@ class JwtController extends Controller
             return response()->json([
                 'status' => $response->status(),
                 'ok' => $response->successful(),
+                'request' => $sentRequest,
                 'headers' => $response->headers(),
                 'body' => $bodyResponse,
                 'raw' => $raw,
