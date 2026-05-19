@@ -56,6 +56,15 @@ class JwtController extends Controller
 
         try {
             $headers = ['Accept' => 'application/json'];
+            
+            $pdfEndpoints = [
+                '/get-payment-slip/pdf',
+            ];
+            
+            if (\Illuminate\Support\Str::endsWith($normalizedEndpoint, $pdfEndpoints)) {
+                $headers['Accept'] = 'application/pdf';
+            }
+            
             $responseToken = null;
 
             if ($service === 'iaaas') {
@@ -109,6 +118,11 @@ class JwtController extends Controller
             $raw = $response->body();
             $decodedResponse = json_decode($raw, true);
             $bodyResponse = json_last_error() === JSON_ERROR_NONE ? $decodedResponse : $raw;
+
+            if (is_string($raw) && !mb_check_encoding($raw, 'UTF-8')) {
+                $bodyResponse = base64_encode($raw);
+                $raw = base64_encode($raw);
+            }
 
             if ($service === 'ibaas') {
                 $this->syncIbaasSessionTokens($request, $normalizedEndpoint, $bodyResponse, $response->successful());

@@ -515,6 +515,26 @@ form.addEventListener('submit', async (ev) => {
             resultRawEl.textContent = '— no raw response —';
         } else {
             resultRawEl.textContent = pretty(responseSummary);
+            
+            const headers = responseSummary.headers || {};
+            const ctKey = Object.keys(headers).find(k => k.toLowerCase() === 'content-type');
+            const ctHeader = ctKey ? headers[ctKey] : null;
+            
+            if (ctHeader && (Array.isArray(ctHeader) ? ctHeader.some(h => h.includes('application/pdf')) : ctHeader.includes('application/pdf'))) {
+                try {
+                    const linkSource = `data:application/pdf;base64,${data.raw}`;
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = linkSource;
+                    downloadLink.download = `document_${Date.now()}.pdf`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    statusText.textContent = 'Download do PDF iniciado automaticamente.';
+                } catch (e) {
+                    console.error('Erro ao baixar o PDF', e);
+                    statusText.textContent = 'Erro ao tentar baixar o PDF.';
+                }
+            }
         }
         toggleCopyVisibility('resultRaw', 'resultRawCopyBtn');
     } catch(err){
