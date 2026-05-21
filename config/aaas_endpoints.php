@@ -48,11 +48,11 @@ return [
         'webhook' => [
             'label' => 'Webhook',
             'endpoints' => [
-                '/v1/aaas/webhooks',
-                '/v1/aaas/webhooks/list',
-                '/v1/aaas/webhooks/{webhook_id}',
-                '/v1/aaas/webhooks/{webhook_id}/update',
-                '/v1/aaas/webhooks/{webhook_id}/delete',
+                '/v1/aaas/webhook',
+                '/v1/aaas/webhook/list',
+                '/v1/aaas/webhook/{webhook_id}',
+                '/v1/aaas/webhook/{webhook_id}/update',
+                '/v1/aaas/webhook/{webhook_id}/delete',
             ],
         ],
         'batchesAndBillings' => [
