@@ -115,6 +115,37 @@ class JwtController extends Controller
 
             $response = Http::withHeaders($headers)->send($method, $fullUrl, $options);
 
+            if ($response->status() === 401 && $service === 'ibaas') {
+                $savedRefreshToken = (string) $request->session()->get('ibaas.refresh_token', '');
+                if ($savedRefreshToken !== '' && $normalizedEndpoint !== '/v1/auth/refresh') {
+                    $refreshUrl = rtrim($baseUrl, '/') . '/v1/auth/refresh';
+                    
+                    $refreshHeaders = ['Accept' => 'application/json'];
+                    if (isset($headers['Authorization'])) {
+                        $refreshHeaders['Authorization'] = $headers['Authorization'];
+                    }
+
+                    $refreshResponse = Http::withHeaders($refreshHeaders)->post($refreshUrl, [
+                        'refresh_token' => $savedRefreshToken
+                    ]);
+
+                    if ($refreshResponse->successful()) {
+                        $newBodyResponse = $refreshResponse->json();
+                        $this->syncIbaasSessionTokens($request, '/v1/auth/refresh', $newBodyResponse, true);
+                        
+                        $newToken = data_get($newBodyResponse, 'authorization.token');
+                        if (is_string($newToken) && $newToken !== '') {
+                            $headers['Authorization'] = 'Bearer ' . $newToken;
+                            $sentRequest['headers'] = $headers;
+                            
+                            $response = Http::withHeaders($headers)->send($method, $fullUrl, $options);
+                        }
+                    } else {
+                        $request->session()->forget(['ibaas.token', 'ibaas.refresh_token', 'ibaas.two_factor_id']);
+                    }
+                }
+            }
+
             $raw = $response->body();
             $decodedResponse = json_decode($raw, true);
             $bodyResponse = json_last_error() === JSON_ERROR_NONE ? $decodedResponse : $raw;
