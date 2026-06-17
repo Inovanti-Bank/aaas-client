@@ -64,28 +64,18 @@ A partir da chave privada, gere a chave pública:
 $ openssl ec -in jwtECDSASHA512.key -pubout -outform PEM -out jwtECDSASHA512.key.pub
 ```
 
-### 5. Armazenar as chaves no projeto
+### 5. Configurar as chaves no `.env`
 
-Coloque os arquivos gerados no diretório `storage/keys`.
-
-Exemplo esperado:
-
-- `storage/keys/jwtECDSASHA512.key`
-- `storage/keys/jwtECDSASHA512.key.pub`
-
-Se necessário, crie a pasta manualmente:
-
-```bash
-$ mkdir -p storage/keys
-```
-
-### 6. Configurar os caminhos das chaves no `.env`
-
-Copie o caminho completo dos arquivos e configure as variáveis abaixo:
+Após gerar as chaves, copie o conteúdo delas e coloque diretamente no arquivo `.env` (certifique-se de envolver o conteúdo com aspas duplas, pois as chaves possuem quebra de linha):
 
 ```dotenv
-JWT_PRIVATE_KEY_PATH=/caminho/completo/para/storage/keys/jwtECDSASHA512.key
-JWT_PUBLIC_KEY_PATH=/caminho/completo/para/storage/keys/jwtECDSASHA512.key.pub
+JWT_PRIVATE_KEY="-----BEGIN EC PRIVATE KEY-----
+CONTEUDO_DA_CHAVE
+-----END EC PRIVATE KEY-----"
+
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
+CONTEUDO_DA_CHAVE
+-----END PUBLIC KEY-----"
 ```
 
 ### 7. Configurar a URL base do ambiente
@@ -155,8 +145,8 @@ API_KEY_IAAAS=sua_api_key_iaaas
 As principais variáveis utilizadas neste projeto são:
 
 ```dotenv
-JWT_PRIVATE_KEY_PATH=/home/seu-usuario/projeto/storage/keys/jwtECDSASHA512.key
-JWT_PUBLIC_KEY_PATH=/home/seu-usuario/projeto/storage/keys/jwtECDSASHA512.key.pub
+JWT_PRIVATE_KEY="-----BEGIN EC PRIVATE KEY-----...-----END EC PRIVATE KEY-----"
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----...-----END PUBLIC KEY-----"
 BASE_URL=https://seu-ambiente-ibaas
 API_KEY_IAAAS=
 ```
