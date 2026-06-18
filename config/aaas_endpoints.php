@@ -27,15 +27,14 @@ return [
         'cashOut' => [
             'label' => 'Cash Out',
             'endpoints' => [
-                '/v1/aaas/cash-out/make-pix-transfer',
-                '/v1/aaas/cash-out/make-non-priority-pix-transfer',
-                '/v1/aaas/cash-out/make-pix-transfer-only-with-alias',
-                '/v1/aaas/cash-out/decode-qr-code',
-                '/v1/aaas/cash-out/make-bank-transfer',
-                '/v1/aaas/cash-out/make-bank-slip-payment',
-                '/v1/aaas/cash-out/make-utilities-payment',
-                '/v1/aaas/cash-out/make-internal-transfer',
-                '/v1/aaas/cash-out/return-internal-transfer',
+                '/v1/aaas/cash-out/{account_id}/make-pix-transfer',
+                '/v1/aaas/cash-out/{account_id}/make-non-priority-pix-transfer',
+                '/v1/aaas/cash-out/{account_id}/make-pix-transfer-only-with-alias',
+                '/v1/aaas/cash-out/{account_id}/decode-qr-code',
+                '/v1/aaas/cash-out/{account_id}/make-bank-transfer',
+                '/v1/aaas/cash-out/{account_id}/make-bank-slip-payment',
+                '/v1/aaas/cash-out/{account_id}/make-utilities-payment',
+                '/v1/aaas/cash-out/{account_id}/make-internal-transfer',
             ],
         ],
         'transaction' => [
