@@ -77,6 +77,17 @@
             </div>
         </form>
 
+        <div id="dumpSection" style="margin-top:18px;margin-bottom:8px;display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
+                 onclick="toggleCollapse('dumpSectionBody','dumpSectionChevron')">
+                <h2 style="margin:0 0 6px">Laravel Dump (dd/dump)</h2>
+                <span id="dumpSectionChevron" style="font-size:18px;line-height:1">▼</span>
+            </div>
+            <div id="dumpSectionBody" style="margin-top:8px;">
+                <iframe id="dumpIframe" style="width:100%;height:400px;border:none;border-radius:6px;background:#0f1724;" srcdoc=""></iframe>
+            </div>
+        </div>
+
         <div id="jwtTokenSection" style="margin-top:18px;margin-bottom:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer"
                  onclick="toggleCollapse('jwtTokenBody','jwtTokenChevron')">
@@ -511,6 +522,25 @@ form.addEventListener('submit', async (ev) => {
             headers: data.headers ?? responseHeaders,
             body: data.body ?? (isWrappedApiResponse ? null : data),
         };
+
+        const rawStr = typeof data.raw === 'string' ? data.raw : '';
+        const isDump = rawStr.includes('Sfdump = window.Sfdump') || rawStr.includes('class="sf-dump"') || rawStr.includes('class=sf-dump');
+        const dumpSection = document.getElementById('dumpSection');
+        const dumpIframe = document.getElementById('dumpIframe');
+
+        if (isDump) {
+            dumpSection.style.display = 'block';
+            // Injeta um CSS base no iframe para garantir que textos não formatados pelo dump fiquem visíveis (claros)
+            const iframeStyle = '<style>body{color:#e6edf3; margin:0; padding:12px; font-family:monospace;}</style>';
+            dumpIframe.srcdoc = iframeStyle + rawStr;
+            responseSummary.body = '[HTML do Dump renderizado na seção "Laravel Dump" abaixo]';
+            // Scroll para a seção de dump para facilitar a vida do usuário
+            setTimeout(() => dumpSection.scrollIntoView({behavior: 'smooth', block: 'start'}), 100);
+        } else {
+            if (dumpSection) dumpSection.style.display = 'none';
+            if (dumpIframe) dumpIframe.srcdoc = '';
+        }
+
         if (responseSummary.body === null && responseSummary.raw === null) {
             resultRawEl.textContent = '— no raw response —';
         } else {
