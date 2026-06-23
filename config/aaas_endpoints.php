@@ -40,8 +40,9 @@ return [
         'transaction' => [
             'label' => 'Transaction',
             'endpoints' => [
-                '/v1/aaas/transaction/{transaction_id}',
-                '/v1/aaas/transaction/withdraw/{withdraw_id}',
+                '/v1/aaas/transactions/bank-slip/{bar_code}',
+                '/v1/aaas/transactions/{transaction_id}',
+                '/v1/aaas/transactions/withdraw/{withdraw_id}',
             ],
         ],
         'webhook' => [
