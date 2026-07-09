@@ -29,7 +29,7 @@ return [
             'endpoints' => [
                 '/v1/aaas/cash-out/{account_id}/pix-transfer',
                 '/v1/aaas/cash-out/{account_id}/non-priority-pix-transfer',
-                '/v1/aaas/cash-out/{account_id}/pix-transfer-only-with-alias',
+                '/v1/aaas/cash-out/{account_id}/pix-transfer/only-with-alias',
                 '/v1/aaas/cash-out/{account_id}/decode-qr-code',
                 '/v1/aaas/cash-out/{account_id}/bank-transfer',
                 '/v1/aaas/cash-out/{account_id}/bank-slip-payment',
@@ -48,11 +48,9 @@ return [
         'webhook' => [
             'label' => 'Webhook',
             'endpoints' => [
-                '/v1/aaas/webhook',
-                '/v1/aaas/webhook/list',
-                '/v1/aaas/webhook/{webhook_id}',
-                '/v1/aaas/webhook/{webhook_id}/update',
-                '/v1/aaas/webhook/{webhook_id}/delete',
+                '/v1/aaas/webhook/{account_id}',
+                '/v1/aaas/webhook/{account_id}/update',
+                '/v1/aaas/webhook/{account_id}/delete',
             ],
         ],
         'batchesAndBillings' => [
@@ -87,6 +85,7 @@ return [
         '/v1/baas/account',
         '/v1/baas/account/dependent/{mother_account_uuid}',
         '/v1/baas/account/{accountId}',
+        '/v1/baas/account/{account_id_block_target}/update-cash-out-blocks',
         '/v1/baas/account/occupations',
         '/v1/baas/account/retrieve-from-provider/by-account-number',
         '/v1/baas/account/retrieve-from-provider/by-account-id',
