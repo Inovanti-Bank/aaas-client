@@ -533,7 +533,7 @@ form.addEventListener('submit', async (ev) => {
             // Injeta um CSS base no iframe para garantir que textos não formatados pelo dump fiquem visíveis (claros)
             const iframeStyle = '<style>body{color:#e6edf3; margin:0; padding:12px; font-family:monospace;}</style>';
             dumpIframe.srcdoc = iframeStyle + rawStr;
-            responseSummary.body = '[HTML do Dump renderizado na seção "Laravel Dump" abaixo]';
+            responseSummary.body = '[HTML do Dump renderizado na seção "Laravel Dump"]';
             // Scroll para a seção de dump para facilitar a vida do usuário
             setTimeout(() => dumpSection.scrollIntoView({behavior: 'smooth', block: 'start'}), 100);
         } else {

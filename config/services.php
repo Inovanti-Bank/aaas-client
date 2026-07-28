@@ -43,6 +43,6 @@ return [
         'ibaas' => [
             'base_url' => env('BASE_URL'),
         ],
+        'local_tenant_domain' => env('LOCAL_TENANT_DOMAIN', 'ibass.inovanti.test'),
     ],
-
 ];

@@ -64,7 +64,14 @@ class JwtController extends Controller
             if (\Illuminate\Support\Str::endsWith($normalizedEndpoint, $pdfEndpoints)) {
                 $headers['Accept'] = 'application/pdf';
             }
-            
+
+            if (str_contains($fullUrl, 'localhost') || str_contains($fullUrl, '127.0.0.1')) {
+                $localTenantDomain = (string) config('services.aaas.local_tenant_domain');
+                if ($localTenantDomain !== '') {
+                    $headers['Host'] = $localTenantDomain;
+                }
+            }
+
             $responseToken = null;
 
             if ($service === 'iaaas') {
@@ -123,6 +130,9 @@ class JwtController extends Controller
                     $refreshHeaders = ['Accept' => 'application/json'];
                     if (isset($headers['Authorization'])) {
                         $refreshHeaders['Authorization'] = $headers['Authorization'];
+                    }
+                    if (isset($headers['Host'])) {
+                        $refreshHeaders['Host'] = $headers['Host'];
                     }
 
                     $refreshResponse = Http::withHeaders($refreshHeaders)->post($refreshUrl, [
