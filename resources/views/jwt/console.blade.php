@@ -32,14 +32,15 @@
             </div>
             <div class="service-switch">
                 <span class="muted">Serviço:</span>
-                <button type="button" id="serviceIAaasBtn" class="service-btn active" data-service="iaaas">IAaas</button>
-                <button type="button" id="serviceIBaasBtn" class="service-btn" data-service="ibaas">IBaas</button>
+                <button type="button" id="serviceIAaasBtn" class="service-btn" data-service="iaaas">IAaas</button>
+                <button type="button" id="serviceIBaasBtn" class="service-btn active" data-service="ibaas">IBaas</button>
+                <button type="button" id="reconfigureKeysBtn" style="display:none; background:none; border:none; color:#3b82f6; cursor:pointer; font-size:12px; margin-left:8px; text-decoration:underline; padding:0;">Configurar chaves</button>
             </div>
         </div>
 
         <form id="jwtForm" style="margin-top:16px">
             @csrf
-            <input id="service" name="service" type="hidden" value="iaaas" />
+            <input id="service" name="service" type="hidden" value="ibaas" />
             <div style="margin-bottom:12px">
                 <label for="base_url" id="baseUrlLabel">Base URL</label>
                 <input id="base_url" name="base_url" type="text" value="{{ $baseUrl }}" />
@@ -159,6 +160,25 @@
         </div>
     </div>
 
+    <!-- Modal API Key -->
+    <div id="apiKeyModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); z-index:9999; justify-content:center; align-items:center;">
+        <div id="apiKeyModalContent" style="background:#fff; padding:24px; border-radius:8px; width:500px; max-width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0">Configurar Chaves (IAaas)</h3>
+            <p class="muted">Insira a sua API Key e a sua Chave Privada para utilizar o serviço IAaas. Apenas a chave privada é necessária para gerar a assinatura localmente.</p>
+            <label style="font-size:12px; display:block; margin-bottom:4px;">API Key</label>
+            <input type="text" id="iaaasApiKeyInput" placeholder="Chave da API" style="margin-bottom:12px; width:100%; box-sizing:border-box;" />
+            
+            <label style="font-size:12px; display:block; margin-bottom:4px;">Private Key (ECDSA)</label>
+            <textarea id="iaaasPrivateKeyInput" placeholder="-----BEGIN EC PRIVATE KEY-----&#10;...&#10;-----END EC PRIVATE KEY-----" rows="6" style="margin-bottom:12px; width:100%; box-sizing:border-box; font-family:monospace; font-size:12px;"></textarea>
+            
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" id="closeApiModalBtn" style="background:#e5e7eb; color:#374151;">Cancelar</button>
+                <button type="button" id="saveApiModalBtn">Salvar</button>
+            </div>
+            <p class="muted" id="apiModalStatus" style="margin:8px 0 0; color:red; display:none;"></p>
+        </div>
+    </div>
+
 <script>
 const form = document.getElementById('jwtForm');
 const sendBtn = document.getElementById('sendBtn');
@@ -174,6 +194,17 @@ const jwtTokenSection = document.getElementById('jwtTokenSection');
 const jwtDecoderSection = document.getElementById('jwtDecoderSection');
 const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 const serviceButtons = document.querySelectorAll('.service-btn');
+
+const apiKeyModal = document.getElementById('apiKeyModal');
+const apiKeyModalContent = document.getElementById('apiKeyModalContent');
+const closeApiModalBtn = document.getElementById('closeApiModalBtn');
+const saveApiModalBtn = document.getElementById('saveApiModalBtn');
+const iaaasApiKeyInput = document.getElementById('iaaasApiKeyInput');
+const iaaasPrivateKeyInput = document.getElementById('iaaasPrivateKeyInput');
+const apiModalStatus = document.getElementById('apiModalStatus');
+const reconfigureKeysBtn = document.getElementById('reconfigureKeysBtn');
+
+let hasIaaasKeys = @json($hasIaaasKeys ?? false);
 
 const SERVICE_DEFAULTS = {
     iaaas: {
@@ -308,6 +339,10 @@ function refreshServiceUi() {
     if (endpointInput) {
         endpointInput.placeholder = isIbaas ? '/v1/baas/…' : '/v1/aaas/…';
     }
+
+    if (reconfigureKeysBtn) {
+        reconfigureKeysBtn.style.display = (!isIbaas && hasIaaasKeys) ? 'inline-block' : 'none';
+    }
 }
 
 function changeService(nextService) {
@@ -330,8 +365,84 @@ function changeService(nextService) {
 serviceButtons.forEach((button) => {
     button.addEventListener('click', () => {
         const nextService = button.dataset.service || 'iaaas';
+        
+        if (nextService === 'iaaas' && !hasIaaasKeys) {
+            // Show modal instead of changing service immediately
+            apiKeyModal.style.display = 'flex';
+            iaaasApiKeyInput.value = '';
+            iaaasPrivateKeyInput.value = '';
+            apiModalStatus.style.display = 'none';
+            iaaasApiKeyInput.focus();
+            return;
+        }
+
         changeService(nextService);
     });
+});
+
+if (reconfigureKeysBtn) {
+    reconfigureKeysBtn.addEventListener('click', () => {
+        apiKeyModal.style.display = 'flex';
+        iaaasApiKeyInput.value = '';
+        iaaasPrivateKeyInput.value = '';
+        apiModalStatus.style.display = 'none';
+        iaaasApiKeyInput.focus();
+    });
+}
+
+closeApiModalBtn.addEventListener('click', () => {
+    apiKeyModal.style.display = 'none';
+});
+
+apiKeyModal.addEventListener('click', (e) => {
+    if (!apiKeyModalContent.contains(e.target)) {
+        apiKeyModal.style.display = 'none';
+    }
+});
+
+saveApiModalBtn.addEventListener('click', async () => {
+    let key = iaaasApiKeyInput.value.trim();
+    let privKey = iaaasPrivateKeyInput.value.trim();
+
+    // Remove accidental quotes that might have been copied from .env files
+    key = key.replace(/^["']|["']$/g, '');
+    privKey = privKey.replace(/^["']|["']$/g, '');
+
+    if (!key || !privKey) {
+        apiModalStatus.textContent = 'Por favor, insira a chave da API e a chave privada.';
+        apiModalStatus.style.display = 'block';
+        return;
+    }
+    
+    saveApiModalBtn.disabled = true;
+    saveApiModalBtn.textContent = 'Salvando...';
+    apiModalStatus.style.display = 'none';
+
+    try {
+        const res = await fetch('/jwt/api-key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf
+            },
+            body: JSON.stringify({ api_key: key, private_key: privKey })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            hasIaaasKeys = true;
+            apiKeyModal.style.display = 'none';
+            changeService('iaaas');
+        } else {
+            throw new Error(data.error || 'Erro ao salvar a chave.');
+        }
+    } catch (e) {
+        apiModalStatus.textContent = e.message;
+        apiModalStatus.style.display = 'block';
+    } finally {
+        saveApiModalBtn.disabled = false;
+        saveApiModalBtn.textContent = 'Salvar';
+    }
 });
 
 function pretty(v){ try{ return JSON.stringify(v, null, 2) }catch(e){ return String(v) } }
