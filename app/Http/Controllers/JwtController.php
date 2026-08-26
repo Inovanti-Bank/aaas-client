@@ -10,14 +10,34 @@ use Exception;
 
 class JwtController extends Controller
 {
-    public function showConsole()
+    public function showConsole(Request $request)
     {
         $baseUrl = (string) (config('services.aaas.iaaas.base_url') ?? url('/'));
+
+        $hasIaaasApiKey = $request->cookie('iaaas_api_key') || $request->session()->has('iaaas_api_key');
+        $hasIaaasPrivateKey = $request->cookie('iaaas_private_key') || $request->session()->has('iaaas_private_key');
 
         return view('jwt.console', [
             'baseUrl' => $baseUrl,
             'endpoints' => config('aaas_endpoints', []),
+            'hasIaaasKeys' => $hasIaaasApiKey && $hasIaaasPrivateKey,
         ]);
+    }
+
+    public function saveApiKey(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'api_key' => 'required|string',
+            'private_key' => 'required|string',
+        ]);
+
+        $cookieApi = cookie('iaaas_api_key', $data['api_key'], 7 * 24 * 60); // 7 days expiration
+        $cookiePriv = cookie('iaaas_private_key', $data['private_key'], 7 * 24 * 60);
+
+        $request->session()->put('iaaas_api_key', $data['api_key']);
+        $request->session()->put('iaaas_private_key', $data['private_key']);
+
+        return response()->json(['success' => true])->cookie($cookieApi)->cookie($cookiePriv);
     }
 
     public function send(Request $request): JsonResponse
@@ -37,7 +57,7 @@ class JwtController extends Controller
         $queryParams = trim($data['query_params'] ?? '');
         $service = $data['service'] ?? 'iaaas';
         $baseUrl = $this->resolveBaseUrl($service, $data['base_url'] ?? null);
-        $apiKey = $this->resolveApiKey($service);
+        $apiKey = $this->resolveApiKey($service, $request);
 
         $body = null;
         if (isset($data['body']) && $data['body'] !== '') {
@@ -75,7 +95,7 @@ class JwtController extends Controller
             $responseToken = null;
 
             if ($service === 'iaaas') {
-                $privateKey = (new GenerateSignedJwt())->resolvePrivateKey();
+                $privateKey = $this->resolvePrivateKey($service, $request);
                 $responseToken = (new GenerateSignedJwt())->call($privateKey, $apiKey, $endpoint, $method, $body);
                 $headers['X-auth-token'] = 'Bearer ' . $responseToken;
                 if ($apiKey !== '') {
@@ -200,11 +220,22 @@ class JwtController extends Controller
         return (string) (config('services.aaas.ibaas.base_url') ?? url('/'));
     }
 
-    private function resolveApiKey(string $service): string
+    private function resolveApiKey(string $service, Request $request): string
     {
-        return $service === 'iaaas'
-            ? (string) (config('services.aaas.iaaas.api_key') ?? '')
-            : '';
+        if ($service === 'iaaas') {
+            return (string) ($request->cookie('iaaas_api_key') ?? $request->session()->get('iaaas_api_key', ''));
+        }
+        
+        return '';
+    }
+
+    private function resolvePrivateKey(string $service, Request $request): string
+    {
+        if ($service === 'iaaas') {
+            return (string) ($request->cookie('iaaas_private_key') ?? $request->session()->get('iaaas_private_key', ''));
+        }
+        
+        return '';
     }
 
     private function syncIbaasSessionTokens(Request $request, string $endpoint, mixed $bodyResponse, bool $ok): void
