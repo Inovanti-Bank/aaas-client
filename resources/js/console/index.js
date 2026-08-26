@@ -325,7 +325,6 @@ function initConsole(config) {
 
         refs.dumpSection.hidden = false;
         refs.dumpSection.open = true;
-        // CSS base para textos fora da formatação do dump ficarem legíveis no fundo escuro
         refs.dumpIframe.srcdoc = '<style>body{color:#e6edf3; margin:0; padding:12px; font-family:monospace;}</style>' + rawStr;
         responseSummary.body = '[HTML do Dump renderizado na seção "Laravel Dump"]';
         setTimeout(() => refs.dumpSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);

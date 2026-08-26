@@ -112,9 +112,6 @@ class IbaasSessionService
         ]);
     }
 
-    /**
-     * @return array{has_token: bool, has_refresh_token: bool, has_two_factor_id: bool}
-     */
     public function getSessionState(Request $request): array
     {
         return [

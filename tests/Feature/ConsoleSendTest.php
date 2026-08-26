@@ -25,9 +25,6 @@ class ConsoleSendTest extends TestCase
         ]);
     }
 
-    /**
-     * @return array<string, string>
-     */
     private function iaaasCredentialsSession(): array
     {
         return [
@@ -114,7 +111,6 @@ class ConsoleSendTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertSessionHas('iaaas_api_key', 'my-api-key')
-            // O middleware TrimStrings apara o \n final do PEM enviado no request
             ->assertSessionHas('iaaas_private_key', trim($this->privateKeyPem))
             ->assertCookie('iaaas_api_key')
             ->assertCookie('iaaas_private_key');

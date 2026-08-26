@@ -6,10 +6,6 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;');
 }
 
-/**
- * Autocomplete de endpoints com suporte a grupos (cabeçalhos não clicáveis).
- * `getSource` deve retornar [{ label: string|null, endpoints: string[] }].
- */
 export function createEndpointDropdown({ inputEl, dropdownEl, getSource, onSelect }) {
     function render(filterValue) {
         const term = (filterValue || '').toLowerCase().trim();

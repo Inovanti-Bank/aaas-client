@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Cookie;
 
 class IaaasCredentialsService
 {
@@ -28,12 +27,6 @@ class IaaasCredentialsService
         return $this->getApiKey($request) !== '' && $this->getPrivateKey($request) !== '';
     }
 
-    /**
-     * Guarda as credenciais na sessão e devolve os cookies (criptografados pelo
-     * middleware padrão) que o controller deve anexar à resposta.
-     *
-     * @return array{0: Cookie, 1: Cookie}
-     */
     public function store(Request $request, string $apiKey, string $privateKey): array
     {
         $request->session()->put(self::KEY_API, $apiKey);

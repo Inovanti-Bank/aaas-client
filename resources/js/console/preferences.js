@@ -9,7 +9,5 @@ export function getStoredPreference(key, fallback) {
 export function setStoredPreference(key, value) {
     try {
         localStorage.setItem(key, value);
-    } catch (e) {
-        // localStorage indisponível — a preferência só não persiste
-    }
+    } catch (e) {}
 }

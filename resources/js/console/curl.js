@@ -2,10 +2,6 @@ function shellQuote(value) {
     return `'${String(value).replace(/'/g, "'\\''")}'`;
 }
 
-/**
- * Monta um comando cURL equivalente à requisição enviada pelo backend,
- * a partir do objeto `request` retornado na resposta do console.
- */
 export function buildCurlCommand(sentRequest) {
     if (!sentRequest || !sentRequest.url) {
         return '';

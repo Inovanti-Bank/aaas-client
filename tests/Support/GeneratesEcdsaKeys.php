@@ -4,11 +4,6 @@ namespace Tests\Support;
 
 trait GeneratesEcdsaKeys
 {
-    /**
-     * Gera um par de chaves ECDSA P-521 em memória para uso nos testes.
-     *
-     * @return array{private: string, public: string}
-     */
     protected function generateEcdsaKeyPair(): array
     {
         $resource = openssl_pkey_new([

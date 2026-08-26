@@ -1,9 +1,7 @@
-// Remove aspas acidentais copiadas de arquivos .env
 function stripSurroundingQuotes(value) {
     return value.trim().replace(/^["']|["']$/g, '');
 }
 
-// Modal secundário com o passo a passo de geração do par de chaves
 function initKeysHelpModal() {
     const helpModal = document.getElementById('keysHelpModal');
     const helpContent = document.getElementById('keysHelpModalContent');
@@ -23,10 +21,6 @@ function initKeysHelpModal() {
     });
 }
 
-/**
- * Modal de configuração das credenciais do IAaas (API Key + chave privada).
- * `onSaved` é chamado após o backend confirmar o salvamento.
- */
 export function createIaaasKeysModal({ saveUrl, csrf, onSaved }) {
     const modal = document.getElementById('iaaasKeysModal');
     const content = document.getElementById('iaaasKeysModalContent');

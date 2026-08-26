@@ -7,7 +7,6 @@
     <title>Humu Service</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <script>
-        // Aplica o tema salvo antes do primeiro paint para evitar flash do tema errado
         (function () {
             try {
                 var theme = localStorage.getItem('aaasConsole.theme');
@@ -15,9 +14,7 @@
                 if (theme === 'dark' || (!theme && prefersDark)) {
                     document.documentElement.classList.add('dark');
                 }
-            } catch (e) {
-                // localStorage indisponível — segue no tema claro
-            }
+            } catch (e) {}
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -6,7 +6,6 @@ export function pretty(value) {
     }
 }
 
-// Escapa apenas &, < e > — aspas precisam sobreviver para o regex de tokens JSON
 function escapeHtml(text) {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -38,7 +37,6 @@ export function highlightJson(jsonText) {
     });
 }
 
-// Renderiza um valor como JSON com destaque de sintaxe dentro de um <pre>
 export function renderJson(element, value) {
     if (!element) return;
     element.innerHTML = highlightJson(pretty(value));

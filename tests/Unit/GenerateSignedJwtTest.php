@@ -56,9 +56,6 @@ class GenerateSignedJwtTest extends TestCase
         $this->assertNull((new GenerateSignedJwt)->resolvePublicKey());
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function decodeJwtClaims(string $token): array
     {
         $parts = explode('.', $token);

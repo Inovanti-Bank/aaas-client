@@ -9,10 +9,6 @@ export function base64UrlDecode(text) {
 
 const JWT_PARTS_COUNT = 3;
 
-/**
- * Decodifica o payload de um JWT sem validar assinatura.
- * Retorna { ok, payload?, text?, error? }.
- */
 export function decodeJwtPayload(token) {
     const parts = token.split('.');
     if (parts.length !== JWT_PARTS_COUNT) {

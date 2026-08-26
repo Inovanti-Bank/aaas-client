@@ -15,17 +15,13 @@ export function addHistoryEntry(entry) {
     const entries = [entry, ...loadHistory()].slice(0, MAX_ENTRIES);
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    } catch (e) {
-        // localStorage indisponível ou cheio — o histórico é apenas conveniência
-    }
+    } catch (e) {}
     return entries;
 }
 
 export function clearHistory() {
     try {
         localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-        // localStorage indisponível — nada a limpar
-    }
+    } catch (e) {}
     return [];
 }

@@ -24,13 +24,6 @@ class ConsoleRequestService
         private readonly GenerateSignedJwt $jwtGenerator,
     ) {}
 
-    /**
-     * Envia a requisição ao serviço escolhido e devolve o payload de resposta do console.
-     *
-     * @return array{status: int, payload: array<string, mixed>}
-     *
-     * @throws InvalidRequestBodyException
-     */
     public function send(Request $request, array $data): array
     {
         $service = $data['service'] ?? self::SERVICE_IAAAS;
@@ -74,9 +67,6 @@ class ConsoleRequestService
         return $this->shapeResponse($request, $service, $normalizedEndpoint, $response, $sentRequest, $responseToken);
     }
 
-    /**
-     * @throws InvalidRequestBodyException
-     */
     private function decodeJsonBody(?string $rawBody): ?array
     {
         if ($rawBody === null || $rawBody === '') {
@@ -170,9 +160,6 @@ class ConsoleRequestService
         return $headers;
     }
 
-    /**
-     * Em 401 no IBaas, tenta renovar o token com o refresh_token salvo e reenvia a requisição original.
-     */
     private function retryWithRefreshedToken(
         Request $request,
         Response $originalResponse,
@@ -217,9 +204,6 @@ class ConsoleRequestService
         return Http::withHeaders($headers)->send($method, $fullUrl, $options);
     }
 
-    /**
-     * @return array{status: int, payload: array<string, mixed>}
-     */
     private function shapeResponse(
         Request $request,
         string $service,
