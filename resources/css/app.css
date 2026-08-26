@@ -5,7 +5,105 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Paleta de cores da marca */
+    --color-energia: #abc928; /* Pantone 376 C */
+    --color-energia-dark: #5c6d10; /* Energia escurecida — texto legível em fundo claro */
+    --color-carvao: #0a0a0a; /* Pantone Black 6C */
+    --color-cobalto: #001886;
+    --color-cobalto-light: #93a7ff; /* Cobalto clareado — texto legível em fundo escuro */
+    --color-urbano: #8d8d8d; /* Cinza Urbano */
+    --color-ambar: #ffd12b;
+    --color-ambar-dark: #8a6a00; /* Ambar escurecido — texto legível em fundo claro */
+}
+
+@layer base {
+    /* Tailwind v4 deixou botões com cursor default — restaura o pointer, exceto quando desabilitados */
+    button:not(:disabled),
+    [role='button']:not(:disabled) {
+        cursor: pointer;
+    }
+}
+
+@layer components {
+    .form-input {
+        @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-energia focus:ring-2 focus:ring-energia/40 dark:border-gray-700 dark:bg-carvao dark:text-gray-100;
+    }
+
+    .console-card {
+        @apply rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900;
+    }
+
+    .console-summary {
+        @apply flex cursor-pointer select-none items-center justify-between gap-3 px-5 py-4 text-base font-semibold [list-style:none];
+    }
+
+    .console-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .console-summary .chevron {
+        @apply text-sm text-gray-400 transition-transform;
+    }
+
+    details[open] > .console-summary .chevron {
+        transform: rotate(180deg);
+    }
+
+    .console-pre {
+        @apply overflow-auto whitespace-pre-wrap break-words rounded-lg bg-carvao p-3 text-[13px] leading-relaxed text-gray-200 dark:border dark:border-gray-800;
+        overflow-wrap: anywhere;
+    }
+
+    .copy-btn {
+        @apply rounded-md bg-gray-200 px-2 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700;
+    }
+
+    .service-btn {
+        @apply rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium transition hover:border-energia dark:border-gray-700 dark:bg-gray-900 dark:hover:border-energia;
+    }
+
+    /* Precisa vir depois de .service-btn para o estado ativo vencer o estilo base */
+    .service-btn.active {
+        @apply border-energia bg-energia text-carvao dark:border-energia dark:bg-energia dark:text-carvao;
+    }
+
+    .layout-btn.active {
+        @apply bg-energia text-carvao;
+    }
+
+    .endpoint-option {
+        @apply block w-full cursor-pointer border-b border-gray-100 px-3 py-1.5 text-left text-[13px] text-gray-800 last:border-b-0 hover:bg-energia/15 dark:border-gray-800 dark:text-gray-200 dark:hover:bg-gray-800;
+    }
+
+    .endpoint-group-label {
+        @apply sticky top-0 border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400;
+    }
+}
+
+/* Destaque de sintaxe para JSON renderizado nos blocos <pre> (fundo Carvão) */
+.json-key {
+    color: var(--color-cobalto-light);
+}
+
+.json-str {
+    color: #c6df6b; /* Energia clareada */
+}
+
+.json-num {
+    color: var(--color-ambar);
+}
+
+.json-bool {
+    color: #c3cfff; /* Cobalto bem claro */
+}
+
+.json-null {
+    color: var(--color-urbano);
+    font-style: italic;
 }

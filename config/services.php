@@ -40,8 +40,12 @@ return [
             'base_url' => env('BASE_URL'),
         ],
         'ibaas' => [
-            'base_url' => env('BASE_URL'),
+            'base_url' => env('IBAAS_BASE_URL', env('BASE_URL')),
         ],
         'local_tenant_domain' => env('LOCAL_TENANT_DOMAIN', 'ibass.inovanti.test'),
+        'jwt' => [
+            'public_key' => env('JWT_PUBLIC_KEY'),
+            'public_key_path' => env('JWT_PUBLIC_KEY_PATH'),
+        ],
     ],
 ];

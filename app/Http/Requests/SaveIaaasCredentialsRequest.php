@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class SaveIaaasCredentialsRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function rules(): array
+    {
+        return [
+            'api_key' => 'required|string',
+            'private_key' => 'required|string',
+        ];
+    }
+}

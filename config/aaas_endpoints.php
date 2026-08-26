@@ -53,7 +53,7 @@ return [
                 '/v1/aaas/webhook/{account_id}',
                 '/v1/aaas/webhook/{account_id}/update',
                 '/v1/aaas/webhook/{account_id}/delete',
-                '/v1/aaas/process/{account_id}/slips/{identifier}/webhook-simulation'
+                '/v1/aaas/process/{account_id}/slips/{identifier}/webhook-simulation',
             ],
         ],
         'batchesAndBillings' => [
