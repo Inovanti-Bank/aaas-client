@@ -8,7 +8,8 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Ecdsa\Sha512;
 use Lcobucci\JWT\Signer\Key\InMemory;
 
-class GenerateSignedJwt {
+class GenerateSignedJwt
+{
     public function call(string $privateKey, string $apiKey, string $endpoint, string $method, mixed $body): string
     {
         $payloadHash = $this->encodePayload($body);
@@ -19,7 +20,7 @@ class GenerateSignedJwt {
 
         $config = $this->createConfiguration($privateKey, $publicKey);
 
-        $now = new DateTimeImmutable();
+        $now = new DateTimeImmutable;
         $builder = $config->builder()
             ->issuedAt($now)
             ->expiresAt($now->modify('+1 minute'));
@@ -49,7 +50,7 @@ class GenerateSignedJwt {
 
     protected function buildClaims(string $apiKey, string $endpoint, string $method, string $payloadHash): array
     {
-        $timestamp = (new DateTimeImmutable())->format('Y-m-d\TH:i:s.u\Z');
+        $timestamp = (new DateTimeImmutable)->format('Y-m-d\TH:i:s.u\Z');
 
         return [
             'timestamp' => $timestamp,
@@ -63,39 +64,26 @@ class GenerateSignedJwt {
     protected function createConfiguration(string $privateKey, ?string $publicKey = null): Configuration
     {
         return Configuration::forAsymmetricSigner(
-            new Sha512(),
+            new Sha512,
             InMemory::plainText($privateKey),
             InMemory::plainText($publicKey ?? '')
         );
     }
 
-    public function resolvePrivateKey(): string
-    {
-        $raw = getenv('JWT_PRIVATE_KEY');
-        if (!empty($raw)) {
-            return $raw;
-            }
-
-        $path = getenv('JWT_PRIVATE_KEY_PATH');
-        if (!empty($path) && file_exists($path)) {
-            $contents = file_get_contents($path);
-            if ($contents !== false) {
-                return $contents;
-            }
-        }
-
-        throw new Exception('Private key not found. Set JWT_PRIVATE_KEY or JWT_PRIVATE_KEY_PATH in your environment.');
-    }
-
     public function resolvePublicKey(): ?string
     {
-        $raw = getenv('JWT_PUBLIC_KEY');
-        if (!empty($raw)) {
+        return $this->resolveKeyFromConfig('services.aaas.jwt.public_key', 'services.aaas.jwt.public_key_path');
+    }
+
+    private function resolveKeyFromConfig(string $rawConfigKey, string $pathConfigKey): ?string
+    {
+        $raw = (string) (config($rawConfigKey) ?? '');
+        if ($raw !== '') {
             return $raw;
         }
 
-        $path = getenv('JWT_PUBLIC_KEY_PATH');
-        if (!empty($path) && file_exists($path)) {
+        $path = (string) (config($pathConfigKey) ?? '');
+        if ($path !== '' && file_exists($path)) {
             $contents = file_get_contents($path);
             if ($contents !== false) {
                 return $contents;
