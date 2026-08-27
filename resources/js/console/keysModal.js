@@ -71,8 +71,10 @@ export function createIaaasKeysModal({ saveUrl, csrf, onSaved }) {
             if (response.ok && data.success) {
                 close();
                 onSaved();
+            } else if (response.status === 419) {
+                showError('Sessão expirada (CSRF). Recarregue a página e tente novamente.');
             } else {
-                showError(data.error || 'Erro ao salvar as chaves.');
+                showError(data.error || data.message || 'Erro ao salvar as chaves.');
             }
         } catch (e) {
             showError(e && e.message ? e.message : 'Erro ao salvar as chaves.');

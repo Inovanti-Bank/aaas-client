@@ -70,6 +70,10 @@ class ApiConsoleController extends Controller
     {
         $data = $request->validated();
 
+        $privateKey = str_replace(['\r\n', '\n', '\r'], "\n", $data['private_key']);
+        $privateKey = preg_replace('/^#\s*/m', '', $privateKey);
+        $data['private_key'] = trim($privateKey);
+
         if (openssl_pkey_get_private($data['private_key']) === false) {
             return response()->json([
                 'error' => 'Chave privada inválida. Cole o conteúdo PEM completo, incluindo as linhas BEGIN/END.',
