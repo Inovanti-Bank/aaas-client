@@ -4,7 +4,8 @@ import { buildCurlCommand } from './curl';
 import { decodeJwtPayload } from './jwt';
 import { pretty, renderJson } from './jsonHighlight';
 import { createIaaasKeysModal } from './keysModal';
-import { extractPathParams, substitutePathParams } from './pathParams';
+import { extractPathParams, normalizeParamName, resolveParamValue, substitutePathParams } from './pathParams';
+import { getStoredPreference, setStoredPreference } from './preferences';
 import {
     HTTP_METHOD_CLASSES,
     copyToClipboard,
@@ -82,6 +83,32 @@ function initConsole(config) {
     let lastSentRequest = null;
     let hasIaaasKeys = Boolean(config.hasIaaasKeys);
 
+    const PATH_PARAMS_STORAGE_KEY = 'aaas_console_path_params';
+
+    function loadStoredPathParams() {
+        try {
+            const raw = getStoredPreference(PATH_PARAMS_STORAGE_KEY, '{}');
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch {
+            return {};
+        }
+    }
+
+    const pathParamsCache = loadStoredPathParams();
+
+    function updatePathParamInCache(name, value) {
+        if (!name) return;
+        pathParamsCache[name] = value;
+        const targetKey = normalizeParamName(name);
+        for (const key of Object.keys(pathParamsCache)) {
+            if (normalizeParamName(key) === targetKey) {
+                pathParamsCache[key] = value;
+            }
+        }
+        setStoredPreference(PATH_PARAMS_STORAGE_KEY, JSON.stringify(pathParamsCache));
+    }
+
     const iaaasKeysModal = createIaaasKeysModal({
         saveUrl: config.iaaasKeysUrl,
         csrf,
@@ -144,9 +171,20 @@ function initConsole(config) {
         return values;
     }
 
+    function syncDomParamsToCache() {
+        const currentValues = collectPathParamValues();
+        Object.entries(currentValues).forEach(([name, value]) => {
+            updatePathParamInCache(name, value);
+        });
+    }
+
     function renderPathParamFields(presetValues = {}) {
+        syncDomParamsToCache();
+        Object.entries(presetValues).forEach(([name, value]) => {
+            updatePathParamInCache(name, value);
+        });
+
         const names = extractPathParams(refs.endpointInput.value);
-        const previousValues = { ...collectPathParamValues(), ...presetValues };
 
         refs.pathParamsFields.innerHTML = '';
         names.forEach((name) => {
@@ -158,12 +196,28 @@ function initConsole(config) {
             input.type = 'text';
             input.className = 'form-input';
             input.dataset.paramName = name;
-            input.value = previousValues[name] || '';
+            const resolvedValue = resolveParamValue(name, presetValues) || resolveParamValue(name, pathParamsCache) || '';
+            input.value = resolvedValue;
+            if (resolvedValue && !pathParamsCache[name]) {
+                updatePathParamInCache(name, resolvedValue);
+            }
             wrapper.append(label, input);
             refs.pathParamsFields.appendChild(wrapper);
         });
         refs.pathParamsSection.hidden = names.length === 0;
     }
+
+    refs.pathParamsFields.addEventListener('input', (event) => {
+        const input = event.target.closest('input[data-param-name]');
+        if (!input) return;
+        updatePathParamInCache(input.dataset.paramName, input.value);
+    });
+
+    refs.pathParamsFields.addEventListener('change', (event) => {
+        const input = event.target.closest('input[data-param-name]');
+        if (!input) return;
+        updatePathParamInCache(input.dataset.paramName, input.value);
+    });
 
     function refreshServiceUi() {
         const isIbaas = refs.serviceInput.value === SERVICE_IBAAS;
