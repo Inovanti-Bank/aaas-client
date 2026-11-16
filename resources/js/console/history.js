@@ -12,10 +12,18 @@ export function loadHistory() {
 }
 
 export function addHistoryEntry(entry) {
-    const entries = [entry, ...loadHistory()].slice(0, MAX_ENTRIES);
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    } catch (e) {}
+    let entries = [entry, ...loadHistory()].slice(0, MAX_ENTRIES);
+    while (entries.length > 0) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+            break;
+        } catch (e) {
+            entries = entries.slice(0, Math.max(1, entries.length - 5));
+            if (entries.length === 1) {
+                break;
+            }
+        }
+    }
     return entries;
 }
 

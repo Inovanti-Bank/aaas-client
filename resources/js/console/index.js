@@ -174,14 +174,18 @@ function initConsole(config) {
     function syncDomParamsToCache() {
         const currentValues = collectPathParamValues();
         Object.entries(currentValues).forEach(([name, value]) => {
-            updatePathParamInCache(name, value);
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                updatePathParamInCache(name, value);
+            }
         });
     }
 
     function renderPathParamFields(presetValues = {}) {
         syncDomParamsToCache();
         Object.entries(presetValues).forEach(([name, value]) => {
-            updatePathParamInCache(name, value);
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                updatePathParamInCache(name, value);
+            }
         });
 
         const names = extractPathParams(refs.endpointInput.value);
@@ -344,6 +348,32 @@ function initConsole(config) {
         refs.methodSelect.value = entry.method;
         refs.queryParamsInput.value = entry.query || '';
         refs.bodyInput.value = entry.body || '';
+
+        if (entry.response) {
+            refs.resultSection.open = true;
+            renderStatusBadge(refs.statusBadge, entry.status);
+            renderJson(refs.resultRaw, entry.response);
+            renderJson(refs.resultSummary, {
+                request: entry.request ?? {
+                    service: entry.service,
+                    method: entry.method,
+                    endpoint: entry.endpointTemplate,
+                    pathParams: entry.pathParams,
+                    query: entry.query,
+                    body: entry.body,
+                },
+                ibaas_session: entry.ibaasSession ?? null,
+            });
+            if (entry.token && refs.jwtToken) {
+                refs.jwtToken.textContent = entry.token;
+            }
+            toggleCopyVisibility(refs.resultRaw, refs.resultRawCopyBtn);
+            toggleCopyVisibility(refs.resultSummary, refs.resultSummaryCopyBtn);
+            if (!refs.jwtTokenSection.hidden) {
+                toggleCopyVisibility(refs.jwtToken, refs.jwtTokenCopyBtn);
+            }
+        }
+
         refs.statusText.textContent = 'Requisição restaurada do histórico.';
         refs.endpointInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -525,6 +555,10 @@ function initConsole(config) {
                 query: refs.queryParamsInput.value,
                 body: refs.bodyInput.value,
                 status: data.status ?? response.status,
+                response: responseSummary,
+                request: data.request ?? payload,
+                ibaasSession: data.ibaas_session ?? null,
+                token: data.token || null,
             }));
         } catch (err) {
             refs.resultSummary.textContent = 'Request failed: ' + err.message;

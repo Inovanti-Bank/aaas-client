@@ -19,7 +19,10 @@ export function resolveParamValue(name, values) {
         return '';
     }
     if (Object.prototype.hasOwnProperty.call(values, name)) {
-        return values[name] !== null && values[name] !== undefined ? String(values[name]) : '';
+        const direct = values[name];
+        if (direct !== null && direct !== undefined && String(direct).trim() !== '') {
+            return String(direct);
+        }
     }
     const targetKey = normalizeParamName(name);
     if (!targetKey) {
@@ -27,7 +30,9 @@ export function resolveParamValue(name, values) {
     }
     for (const [key, value] of Object.entries(values)) {
         if (normalizeParamName(key) === targetKey) {
-            return value !== null && value !== undefined ? String(value) : '';
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                return String(value);
+            }
         }
     }
     return '';
